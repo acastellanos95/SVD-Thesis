@@ -1,0 +1,10 @@
+NT: 16
+Number of threads: 1
+-------------------------------- Test 1 (Squared matrix QR decomposition) OMP --------------------------------
+Dimensions, height: 1000, width: 1000
+QR decomposition OMP time with Q calculation: 2.39666
+Biggest error between A and QR: 0.000000
+-------------------------------- Test 1 (Squared matrix QR decomposition) OMP --------------------------------
+Dimensions, height: 2000, width: 2000
+QR decomposition OMP time with Q calculation: 13.6351
+Biggest error between A and QR: 0.000000

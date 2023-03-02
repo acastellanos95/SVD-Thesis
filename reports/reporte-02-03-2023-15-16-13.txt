@@ -1,0 +1,8 @@
+NT: 16
+Number of threads: 1
+-------------------------------- Test 1 (Squared matrix QR decomposition) OMP --------------------------------
+Dimensions, height: 1000, width: 1000
+QR decomposition OMP time with Q calculation: 0.802057
+-------------------------------- Test 1 (Squared matrix QR decomposition) OMP --------------------------------
+Dimensions, height: 2000, width: 2000
+QR decomposition OMP time with Q calculation: 10.2429
