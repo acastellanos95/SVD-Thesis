@@ -17,7 +17,7 @@ IF (OPENMP_FOUND)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_CXX_FLAGS}")
 ENDIF()
 
-add_executable(SVD_Thesis src/main.cu lib/HouseholderMethods.cuh lib/HouseholderMethods.cu lib/Matrix.cuh lib/global.cuh lib/JacobiMethods.cuh lib/JacobiMethods.cu)
+add_executable(SVD_Thesis src/main.cu lib/HouseholderMethods.cuh lib/HouseholderMethods.cu lib/Matrix.cuh lib/global.cuh lib/JacobiMethods.cuh lib/JacobiMethods.cu lib/Utils.cu lib/Utils.cuh)
 
 target_compile_options(SVD_Thesis PUBLIC $<TARGET_PROPERTY:MKL::MKL,INTERFACE_COMPILE_OPTIONS>)
 target_include_directories(SVD_Thesis PUBLIC $<TARGET_PROPERTY:MKL::MKL,INTERFACE_INCLUDE_DIRECTORIES>)
