@@ -5,8 +5,11 @@
 #ifndef SVD_THESIS_LIB_JACOBIMETHODS_CUH_
 #define SVD_THESIS_LIB_JACOBIMETHODS_CUH_
 
+#include <iostream>
+#include <iomanip>
 #include "Matrix.cuh"
 #include "global.cuh"
+#include "Utils.cuh"
 
 namespace Thesis {
 
@@ -16,11 +19,14 @@ enum SVD_OPTIONS {
   NoVec
 };
 
+#define V_OPTION
+
 void sequential_dgesvd(SVD_OPTIONS jobu,
                        SVD_OPTIONS jobv,
                        size_t m,
                        size_t n,
-                       const Matrix &A,
+                       MATRIX_LAYOUT matrix_layout_A,
+                       Matrix &A,
                        size_t lda,
                        Matrix &s,
                        Matrix &U,

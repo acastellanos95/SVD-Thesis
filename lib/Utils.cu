@@ -30,12 +30,20 @@ namespace Thesis {
               The leading dimension of the array A. Depends in the ordering
 
       @param[in]
-      p     SIZE_T
+      p       SIZE_T
               The index p of row to eliminate in A.
 
       @param[in]
-      q     SIZE_T
+      q       SIZE_T
               The index q of column to eliminate in A.
+
+      @param[in]
+      alpha   DOUBLE
+              Expecting \alpha = a_p^T\cdot a_q.
+
+      @param[in]
+      beta       DOUBLE
+              Expecting \beta = a_q^T\cdot a_q.
 
       @param[out]
       info    std::tuple<double, double>
@@ -51,14 +59,12 @@ std::tuple<double, double> non_sym_Schur(MATRIX_LAYOUT matrix_layout,
                                          const Matrix &A,
                                          size_t lda,
                                          size_t p,
-                                         size_t q) {
-  if (!(1 <= p < q <= n)) {
-    throw std::runtime_error(
-        "index (p,q) is not 1 <= p < q <= n with index (" + std::to_string(p) + "," + std::to_string(q) + ").");
-  }
+                                         size_t q,
+                                         double alpha,
+                                         double beta) {
 
-  double alpha = 0.0;
-  double beta = 0.0;
+  alpha = 2.0 * alpha;
+  beta = beta;
   double gamma = 0.0;
   double c = 0.0, s = 0.0;
 
@@ -86,4 +92,20 @@ std::tuple<double, double> non_sym_Schur(MATRIX_LAYOUT matrix_layout,
   }
   return std::make_tuple(c, s);
 }
+
+size_t IteratorC(size_t i, size_t j, size_t ld){
+  return (((j)*(ld))+(i));
+}
+
+size_t IteratorR(size_t i, size_t j, size_t ld){
+  return (((i)*(ld))+(j));
+}
+
+std::function<size_t(size_t, size_t, size_t)> get_iterator(MATRIX_LAYOUT matrix_layout){
+  if(matrix_layout == ROW_MAJOR)
+    return IteratorR;
+  else
+    return IteratorC;
+}
+
 } // Thesis
