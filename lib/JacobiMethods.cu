@@ -213,68 +213,90 @@ void sequential_dgesvd(SVD_OPTIONS jobu,
     for(size_t i = 0; i < std::min(m, n); ++i){
       V.elements[IteratorR(i, i, ldv)] = 1.0;
     }
-  } else if(jobv == NoVec){
-    #undef V_OPTION
   }
+
+#ifdef DEBUG
+  // Report Matrix A^T * A
+  std::cout << std::fixed << std::setprecision(3) << "A^T * A: \n";
+  for (size_t indexRow = 0; indexRow < m; ++indexRow) {
+    for (size_t indexCol = 0; indexCol < n; ++indexCol) {
+      double value = 0.0;
+      for(size_t k_dot = 0; k_dot < m; ++k_dot){
+        value += A.elements[iterator(k_dot, indexRow, lda)] * A.elements[iterator(k_dot, indexCol, lda)];
+      }
+      std::cout << value << " ";
+    }
+    std::cout << '\n';
+  }
+#endif
 
   while(istop < stop_condition){
     istop = 0;
     // Ordering in  A. Sameh. On Jacobi and Jacobi-like algorithms for a parallel computer. Math. Comput., 25:579–590,
     // 1971
-    for(size_t k = 1; k <= m_ordering - 1; ++k){
+    for(size_t k = 1; k < m_ordering; ++k) {
       size_t p = 0;
+      size_t p_trans = 0;
+      size_t q_trans = 0;
       for(size_t q = m_ordering - k + 1; q <= n - k; ++q){
-        if (m_ordering - k + 1 <= q <= 2 * m_ordering - 2 * k){
-          p = (2 * m_ordering - 2 * k + 1) - q;
-        } else if (2 * m_ordering - 2 * k < q <= 2 * m_ordering - k - 1){
-          p = (4 * m_ordering - 2 * k) - q;
-        } else if(2 * m_ordering - k - 1 < q){
+        if (m_ordering - k + 1 <= q && q <= (2 * m_ordering) - (2 * k)){
+          p = ((2 * m_ordering) - (2 * k) + 1) - q;
+        } else if ((2 * m_ordering) - (2 * k) < q && q<= (2 * m_ordering) - k - 1){
+          p = ((4 * m_ordering) - (2 * k)) - q;
+        } else if((2 * m_ordering) - k - 1 < q){
           p = n;
         }
 
         // Translate to (0,0)
-        p = p-1;
-        q = q-1;
+        p_trans = p-1;
+        q_trans = q-1;
 
         double alpha = 0.0;
         double beta = 0.0;
         double gamma = 0.0;
         // \alpha = a_p^T\cdot a_q
         for(size_t i = 0; i < m; ++i){
-          alpha += A.elements[iterator(i, p, lda)] * A.elements[iterator(i, q, lda)];
+          alpha += A.elements[iterator(i, p_trans, lda)] * A.elements[iterator(i, q_trans, lda)];
         }
         // \beta = a_q^T\cdot a_q
         for(size_t i = 0; i < m; ++i){
-          beta += A.elements[iterator(i, q, lda)] * A.elements[iterator(i, q, lda)];
+          beta += A.elements[iterator(i, q_trans, lda)] * A.elements[iterator(i, q_trans, lda)];
         }
         // \gamma = a_p^T\cdot a_p
         for(size_t i = 0; i < m; ++i){
-          gamma += A.elements[iterator(i, p, lda)] * A.elements[iterator(i, p, lda)];
+          gamma += A.elements[iterator(i, p_trans, lda)] * A.elements[iterator(i, p_trans, lda)];
         }
 
         // (a_p^T\cdot a_q)^2 / (a_p^T\cdot a_p)(a_q^T\cdot a_q) > tolerance
-        if((alpha * alpha / (beta * gamma)) > tolerance){
-          auto [c_schur, s_schur] = non_sym_Schur(matrix_layout_A, m, n, A, lda, p, q, alpha, beta);
+        #ifdef DEBUG
+        std::cout << std::fixed << std::setprecision(3) << R"((a_p^T\cdot a_q) = )" << abs(alpha) << '\n';
+        #endif
+        if(abs(alpha) > tolerance){
+          auto [c_schur, s_schur] = non_sym_Schur(matrix_layout_A, m, n, A, lda, p_trans, q_trans, alpha, beta);
           for(size_t i = 0; i < m; ++i){
-            A.elements[iterator(i, p, lda)] = c_schur *  A.elements[iterator(i, p, lda)] + s_schur * A.elements[iterator(i, q, lda)];
-            A.elements[iterator(i, q, lda)] = -s_schur *  A.elements[iterator(i, p, lda)] + c_schur * A.elements[iterator(i, q, lda)];
+            A.elements[iterator(i, p_trans, lda)] = c_schur *  A.elements[iterator(i, p_trans, lda)] + s_schur * A.elements[iterator(i, q_trans, lda)];
+            A.elements[iterator(i, q_trans, lda)] = -s_schur *  A.elements[iterator(i, p_trans, lda)] + c_schur * A.elements[iterator(i, q_trans, lda)];
           }
-          #ifdef V_OPTION
-          for(size_t i = 0; i < n; ++i){
-            V.elements[IteratorR(i, p, ldv)] = c_schur *  V.elements[IteratorR(i, p, ldv)] + s_schur * V.elements[IteratorR(i, q, ldv)];
-            V.elements[IteratorR(i, q, ldv)] = -s_schur *  V.elements[IteratorR(i, p, ldv)] + c_schur * V.elements[IteratorR(i, q, ldv)];
+          if(jobv == AllVec || jobv == SomeVec){
+            for(size_t i = 0; i < n; ++i){
+              V.elements[IteratorR(i, p_trans, ldv)] = c_schur *  V.elements[IteratorR(i, p_trans, ldv)] + s_schur * V.elements[IteratorR(i, q_trans, ldv)];
+              V.elements[IteratorR(i, q_trans, ldv)] = -s_schur *  V.elements[IteratorR(i, p_trans, ldv)] + c_schur * V.elements[IteratorR(i, q_trans, ldv)];
+            }
           }
-          #endif
         } else {
           istop++;
         }
 
         #ifdef DEBUG
-        // Report Matrix A
-        std::cout << std::fixed << std::setprecision(3) << "A*J: \n";
+        // Report Matrix A^T * A
+        std::cout << std::fixed << std::setprecision(3) << "A^T * A: \n";
         for (size_t indexRow = 0; indexRow < m; ++indexRow) {
           for (size_t indexCol = 0; indexCol < n; ++indexCol) {
-            std::cout << A.elements[iterator(indexRow, indexCol, lda)] << " ";
+            double value = 0.0;
+            for(size_t k_dot = 0; k_dot < m; ++k_dot){
+              value += A.elements[iterator(k_dot, indexRow, lda)] * A.elements[iterator(k_dot, indexCol, lda)];
+            }
+            std::cout << value << " ";
           }
           std::cout << '\n';
         }
@@ -282,55 +304,87 @@ void sequential_dgesvd(SVD_OPTIONS jobu,
       }
     }
 
-    for(size_t k = m_ordering; k <= 2*m_ordering - 1; ++k){
+    for(size_t k = m_ordering; k < 2*m_ordering; ++k){
       size_t p = 0;
-      for(size_t q = 4 * m_ordering - n - k; q < 3 * m_ordering - k; ++q){
-        if(q < 2 * m_ordering - k + 1){
+      size_t p_trans = 0;
+      size_t q_trans = 0;
+      for(size_t q = (4 * m_ordering) - n - k; q < (3 * m_ordering) - k; ++q){
+        if(q < (2 * m_ordering) - k + 1){
           p = n;
-        } else if(2 * m_ordering - k + 1 <= q <= 4 * m_ordering - 2 * k - 1){
-          p = (4 * m_ordering - 2 * k) - q;
-        } else if(4 * m_ordering - 2 * k - 1 < q){
-          p = (6 * m_ordering - 2 * k - 1) - q;
+        } else if((2 * m_ordering) - k + 1 <= q && q <= (4 * m_ordering) - (2 * k) - 1){
+          p = ((4 * m_ordering) - (2 * k)) - q;
+        } else if((4 * m_ordering) - (2 * k) - 1 < q){
+          p = ((6 * m_ordering) - (2 * k) - 1) - q;
         }
 
         // Translate to (0,0)
-        p = p-1;
-        q = q-1;
+        p_trans = p-1;
+        q_trans = q-1;
 
         double alpha = 0.0;
         double beta = 0.0;
         double gamma = 0.0;
         // \alpha = a_p^T\cdot a_q
         for(size_t i = 0; i < m; ++i){
-          alpha += A.elements[iterator(i, p, lda)] * A.elements[iterator(i, q, lda)];
+          alpha += A.elements[iterator(i, p_trans, lda)] * A.elements[iterator(i, q_trans, lda)];
         }
         // \beta = a_q^T\cdot a_q
         for(size_t i = 0; i < m; ++i){
-          beta += A.elements[iterator(i, q, lda)] * A.elements[iterator(i, q, lda)];
+          beta += A.elements[iterator(i, q_trans, lda)] * A.elements[iterator(i, q_trans, lda)];
         }
         // \gamma = a_p^T\cdot a_p
         for(size_t i = 0; i < m; ++i){
-          gamma += A.elements[iterator(i, p, lda)] * A.elements[iterator(i, p, lda)];
+          gamma += A.elements[iterator(i, p_trans, lda)] * A.elements[iterator(i, p_trans, lda)];
         }
 
         // (a_p^T\cdot a_q)^2 / (a_p^T\cdot a_p)(a_q^T\cdot a_q) > tolerance
-        if((alpha * alpha / (beta * gamma)) > tolerance){
-          auto [c_schur, s_schur] = non_sym_Schur(matrix_layout_A, m, n, A, lda, p, q, alpha, beta);
+        if(abs(alpha) > tolerance){
+          auto [c_schur, s_schur] = non_sym_Schur(matrix_layout_A, m, n, A, lda, p, q_trans, alpha, beta);
           for(size_t i = 0; i < m; ++i){
-            A.elements[iterator(i, p, lda)] = c_schur *  A.elements[iterator(i, p, lda)] + s_schur * A.elements[iterator(i, q, lda)];
-            A.elements[iterator(i, q, lda)] = -s_schur *  A.elements[iterator(i, p, lda)] + c_schur * A.elements[iterator(i, q, lda)];
+            A.elements[iterator(i, p_trans, lda)] = c_schur *  A.elements[iterator(i, p_trans, lda)] + s_schur * A.elements[iterator(i, q_trans, lda)];
+            A.elements[iterator(i, q_trans, lda)] = -s_schur *  A.elements[iterator(i, p_trans, lda)] + c_schur * A.elements[iterator(i, q_trans, lda)];
           }
-          #ifdef V_OPTION
-          for(size_t i = 0; i < n; ++i){
-            V.elements[IteratorR(i, p, ldv)] = c_schur *  V.elements[IteratorR(i, p, ldv)] + s_schur * V.elements[IteratorR(i, q, ldv)];
-            V.elements[IteratorR(i, q, ldv)] = -s_schur *  V.elements[IteratorR(i, p, ldv)] + c_schur * V.elements[IteratorR(i, q, ldv)];
+          if(jobv == AllVec || jobv == SomeVec){
+            for(size_t i = 0; i < n; ++i){
+              V.elements[IteratorR(i, p_trans, ldv)] = c_schur *  V.elements[IteratorR(i, p_trans, ldv)] + s_schur * V.elements[IteratorR(i, q_trans, ldv)];
+              V.elements[IteratorR(i, q_trans, ldv)] = -s_schur *  V.elements[IteratorR(i, p_trans, ldv)] + c_schur * V.elements[IteratorR(i, q_trans, ldv)];
+            }
           }
-          #endif
         } else {
           istop++;
         }
+
+        #ifdef DEBUG
+        // Report Matrix A^T * A
+        std::cout << std::fixed << std::setprecision(3) << "A^T * A: \n";
+        for (size_t indexRow = 0; indexRow < m; ++indexRow) {
+          for (size_t indexCol = 0; indexCol < n; ++indexCol) {
+            double value = 0.0;
+            for(size_t k_dot = 0; k_dot < m; ++k_dot){
+              value += A.elements[iterator(k_dot, indexRow, lda)] * A.elements[iterator(k_dot, indexCol, lda)];
+            }
+            std::cout << value << " ";
+          }
+          std::cout << '\n';
+        }
+        #endif
       }
     }
+
+    #ifdef DEBUG
+    // Report Matrix A^T * A
+    std::cout << std::fixed << std::setprecision(3) << "A^T * A: \n";
+    for (size_t indexRow = 0; indexRow < m; ++indexRow) {
+      for (size_t indexCol = 0; indexCol < n; ++indexCol) {
+        double value = 0.0;
+        for(size_t k_dot = 0; k_dot < m; ++k_dot){
+          value += A.elements[iterator(k_dot, indexRow, lda)] * A.elements[iterator(k_dot, indexCol, lda)];
+        }
+        std::cout << value << " ";
+      }
+      std::cout << '\n';
+    }
+    #endif
   }
 
   // Compute \Sigma

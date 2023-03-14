@@ -3,6 +3,7 @@ import numpy as np
 
 n = 10
 m = math.floor((n + 1) / 2)
+print(m)
 
 A = np.zeros((n, n))
 
@@ -14,6 +15,7 @@ for k in range(1, m):
             p = (4 * m - 2 * k) - q
         elif 2 * m - k - 1 < q:
             p = n
+        print(f"({p-1},{q-1})")
         A[p - 1, q - 1] = k
 
 for k in range(m, 2 * m):
@@ -24,6 +26,7 @@ for k in range(m, 2 * m):
             p = (4 * m - 2 * k) - q
         elif 4 * m - 2 * k - 1 < q:
             p = (6 * m - 2 * k - 1) - q
+        print(f"({p-1},{q-1})")
         A[p - 1, q - 1] = k
 
 print(A)

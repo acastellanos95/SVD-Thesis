@@ -65,23 +65,8 @@ std::tuple<double, double> non_sym_Schur(MATRIX_LAYOUT matrix_layout,
 
   alpha = 2.0 * alpha;
   beta = beta;
-  double gamma = 0.0;
+  double gamma = sqrt(alpha * alpha + beta * beta);
   double c = 0.0, s = 0.0;
-
-  if (matrix_layout == ROW_MAJOR) {
-    for (size_t index_row = 0; index_row < m; ++index_row) {
-      alpha += A.elements[IteratorR(index_row, p, lda)] * A.elements[IteratorR(index_row, q, lda)];
-      beta += A.elements[IteratorR(index_row, q, lda)] * A.elements[IteratorR(index_row, q, lda)];
-    }
-  } else {
-    for (size_t index_row = 0; index_row < m; ++index_row) {
-      alpha += A.elements[IteratorC(index_row, p, lda)] * A.elements[IteratorC(index_row, q, lda)];
-      beta += A.elements[IteratorC(index_row, q, lda)] * A.elements[IteratorC(index_row, q, lda)];
-    }
-  }
-
-  alpha = 2.0 * alpha;
-  gamma = sqrt(alpha * alpha + beta * beta);
 
   if (beta > 0.0) {
     c = sqrt((beta + gamma) / (2.0 * gamma));
