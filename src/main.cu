@@ -1,6 +1,7 @@
 #include <iostream>
 #include <random>
 #include <omp.h>
+#include <cmath>
 #include "../lib/HouseholderMethods.cuh"
 #include "../lib/JacobiMethods.cuh"
 #include "../lib/global.cuh"
@@ -9,8 +10,79 @@
 int main(){
   // SEED!!!
   const unsigned seed = 1000000;
+
+  #ifdef TESTS
+  {
+  std::cout << "Schur Elimination\n";
+
+  Matrix A;
+  A.height = 15;
+  A.width = 10;
+  A.elements = new double[A.height * A.width];
+
+  std::cout << "Dimensions, height: " << A.height << ", width: " << A.width << "\n";
+
+  std::default_random_engine e(seed);
+  std::uniform_real_distribution<double> uniform_dist(1.0, 2.0);
+  for (size_t indexRow = 0; indexRow < A.height; ++indexRow) {
+    for (size_t indexCol = 0; indexCol < A.width; ++indexCol) {
+      double value = uniform_dist(e);
+      A.elements[Thesis::IteratorC(indexRow, indexCol, A.height)] = value;
+    }
+  }
+
+  // Report Matrix A
+  std::cout << std::fixed << std::setprecision(3) << "A: \n";
+  for (size_t indexRow = 0; indexRow < A.height; ++indexRow) {
+    for (size_t indexCol = 0; indexCol < A.width; ++indexCol) {
+      std::cout << A.elements[Thesis::IteratorC(indexRow, indexCol, A.height)] << " ";
+    }
+    std::cout << '\n';
+  }
+
+  // Report Matrix A^T * A
+  std::cout << std::fixed << std::setprecision(3) << "A^T * A: \n";
+  for (size_t indexRow = 0; indexRow < A.width; ++indexRow) {
+    for (size_t indexCol = 0; indexCol < A.width; ++indexCol) {
+      double value = 0.0;
+      for(size_t k_dot = 0; k_dot < A.height; ++k_dot){
+        value += A.elements[Thesis::IteratorC(k_dot, indexRow, A.height)] * A.elements[Thesis::IteratorC(k_dot, indexCol, A.height)];
+      }
+      std::cout << value << " ";
+    }
+    std::cout << '\n';
+  }
+
+  size_t p = 0;
+  size_t q = 5;
+
+  auto [c_schur, s_schur] = Thesis::non_sym_Schur_non_ordered(Thesis::IteratorC, A.height, A.width, A, A.height, p, q);
+
+  for(size_t i = 0; i < A.height; ++i){
+    auto tmp_p = c_schur *  A.elements[Thesis::IteratorC(i, p, A.height)] - s_schur * A.elements[Thesis::IteratorC(i, q, A.height)];
+    auto tmp_q = s_schur *  A.elements[Thesis::IteratorC(i, p, A.height)] + c_schur * A.elements[Thesis::IteratorC(i, q, A.height)];
+    A.elements[Thesis::IteratorC(i, p, A.height)] = tmp_p;
+    A.elements[Thesis::IteratorC(i, q, A.height)] = tmp_q;
+  }
+
+  // Report Matrix A^T * A
+  std::cout << std::fixed << std::setprecision(3) << "A^T * A: \n";
+  for (size_t indexRow = 0; indexRow < A.width; ++indexRow) {
+    for (size_t indexCol = 0; indexCol < A.width; ++indexCol) {
+      double value = 0.0;
+      for(size_t k_dot = 0; k_dot < A.height; ++k_dot){
+        value += A.elements[Thesis::IteratorC(k_dot, indexRow, A.height)] * A.elements[Thesis::IteratorC(k_dot, indexCol, A.height)];
+      }
+      std::cout << value << " ";
+    }
+    std::cout << '\n';
+  }
+  std::cout << '\n';
+}
+  #endif
+
   size_t begin = 10;
-  size_t end = 10;
+  size_t end = 30;
   size_t delta = 10;
   auto t = std::time(nullptr);
   auto tm = *std::localtime(&t);
@@ -55,34 +127,60 @@ int main(){
 
     std::fill_n(U.elements, U.height * U.width, 0.0);
     std::fill_n(V.elements, V.height * V.width, 0.0);
+    std::fill_n(A.elements, A.height * A.width, 0.0);
 
-    // Create a bidiagonal
+    // Create a random matrix
+//    std::default_random_engine e(seed);
+//    std::uniform_real_distribution<double> uniform_dist(1.0, 2.0);
+//    for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
+//      for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
+//        double value = uniform_dist(e);
+//        A.elements[Thesis::IteratorC(indexRow, indexCol, A_height)] = value;
+//      }
+//    }
+
+    // Create a random bidiagonal matrix
     std::default_random_engine e(seed);
-    std::uniform_real_distribution<double> uniform_dist(1.0, 10.0);
-    for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
-      double value1 = uniform_dist(e);
-      double value2 = uniform_dist(e);
-      A.elements[Thesis::IteratorR(indexRow, indexRow, A_height)] = value1;
-      A.elements[Thesis::IteratorR(indexRow, indexRow + 1, A_height)] = value2;
+    std::uniform_real_distribution<double> uniform_dist(1.0, 2.0);
+    for (size_t indexRow = 0; indexRow < std::min<size_t>(A_height, A_width); ++indexRow) {
+      double value = uniform_dist(e);
+      A.elements[Thesis::IteratorC(indexRow, indexRow, A_height)] = value;
     }
 
-#ifdef REPORT
+    for (size_t indexRow = 0; indexRow < (std::min<size_t>(A_height, A_width) - 1); ++indexRow) {
+      double value = uniform_dist(e);
+      A.elements[Thesis::IteratorC(indexRow, indexRow + 1, A_height)] = value;
+    }
+
+    #ifdef REPORT
     // Report Matrix A
     file << std::fixed << std::setprecision(3) << "A: \n";
     std::cout << std::fixed << std::setprecision(3) << "A: \n";
     for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
       for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
-        file << A.elements[Thesis::IteratorR(indexRow, indexCol, A_height)] << " ";
-        std::cout << A.elements[Thesis::IteratorR(indexRow, indexCol, A_height)] << " ";
+        file << A.elements[Thesis::IteratorC(indexRow, indexCol, A_height)] << " ";
+        std::cout << A.elements[Thesis::IteratorC(indexRow, indexCol, A_height)] << " ";
       }
       file << '\n';
       std::cout << '\n';
     }
-#endif
+    // Report Matrix A^T * A
+    std::cout << std::fixed << std::setprecision(3) << "A^T * A: \n";
+    for (size_t indexRow = 0; indexRow < A.width; ++indexRow) {
+      for (size_t indexCol = 0; indexCol < A.width; ++indexCol) {
+        double value = 0.0;
+        for(size_t k_dot = 0; k_dot < A.height; ++k_dot){
+          value += A.elements[Thesis::IteratorC(k_dot, indexRow, A.height)] * A.elements[Thesis::IteratorC(k_dot, indexCol, A.height)];
+        }
+        std::cout << value << " ";
+      }
+      std::cout << '\n';
+    }
+    #endif
 
     // Calculate SVD decomposition
     double ti = omp_get_wtime();
-    Thesis::sequential_dgesvd(Thesis::AllVec, Thesis::AllVec, A.height, A.width, Thesis::ROW_MAJOR, A, A_height, s, U, A_height, V, A_width);
+    Thesis::sequential_dgesvd(Thesis::AllVec, Thesis::AllVec, A.height, A.width, Thesis::COL_MAJOR, A, A_height, s, U, A_height, V, A_width);
     double tf = omp_get_wtime();
     double time = tf - ti;
 
@@ -90,13 +188,27 @@ int main(){
     std::cout << "SVD sequential time with U,V calculation: " << time << "\n";
 
     #ifdef REPORT
+    // Report Matrix A=USV
+    std::cout << std::fixed << std::setprecision(3) << "A=USV^T: \n";
+    for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
+      for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
+        double value = 0.0;
+        for(size_t k_dot = 0; k_dot < A_width; ++k_dot){
+          value += U.elements[Thesis::IteratorC(indexRow, k_dot, A_height)] * s.elements[k_dot] * V.elements[Thesis::IteratorC(indexCol, k_dot, A_height)];
+        }
+//        A_tmp.elements[Thesis::IteratorC(indexRow, indexCol, A_height)] = value;
+        std::cout << value << " ";
+      }
+      std::cout << '\n';
+    }
+
     // Report Matrix U
     file << std::fixed << std::setprecision(3) << "U: \n";
     std::cout << std::fixed << std::setprecision(3) << "U: \n";
     for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
       for (size_t indexCol = 0; indexCol < A_height; ++indexCol) {
-        file << U.elements[Thesis::IteratorR(indexRow, indexCol, A_height)] << " ";
-        std::cout << U.elements[Thesis::IteratorR(indexRow, indexCol, A_height)] << " ";
+        file << U.elements[Thesis::IteratorC(indexRow, indexCol, A_height)] << " ";
+        std::cout << U.elements[Thesis::IteratorC(indexRow, indexCol, A_height)] << " ";
       }
       file << '\n';
       std::cout << '\n';
@@ -117,14 +229,14 @@ int main(){
     std::cout << std::fixed << std::setprecision(3) << "V: \n";
     for (size_t indexRow = 0; indexRow < A_width; ++indexRow) {
       for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
-        file << V.elements[Thesis::IteratorR(indexRow, indexCol, A_width)] << " ";
-        std::cout << V.elements[Thesis::IteratorR(indexRow, indexCol, A_width)] << " ";
+        file << V.elements[Thesis::IteratorC(indexRow, indexCol, A_width)] << " ";
+        std::cout << V.elements[Thesis::IteratorC(indexRow, indexCol, A_width)] << " ";
       }
       file << '\n';
       std::cout << '\n';
     }
     #endif
-#endif
+    #endif
 
   }
 

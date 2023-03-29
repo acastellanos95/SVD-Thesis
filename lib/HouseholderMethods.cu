@@ -11,7 +11,8 @@
  * @param B Matrix that holds Householder multiplicacion transformations of the form H_1H_2H_3...B of m x m dimension
  * @param R Matrix upper triangular of m x n dimension
  */
-void QRDecompositionParallelWithB(const Matrix &A, Matrix &B, Matrix &R, std::ofstream &file) {
+void Thesis::QRDecompositionParallelWithB(const Matrix &A, Matrix &B, Matrix &R, std::ofstream &file) {
+
 #ifdef DEBUG
   if (A.height >= A.width) {
     std::cout << "A podría tener columnas linealmente independientes\n";
@@ -221,7 +222,7 @@ void QRDecompositionParallelWithB(const Matrix &A, Matrix &B, Matrix &R, std::of
  * @param A Matrix to be decomposed of m x n dimension
  * @param R Matrix upper triangular of m x n dimension
  */
-void QRDecompositionParallel(const Matrix &A, Matrix &R, std::ofstream &file) {
+void Thesis::QRDecompositionParallel(const Matrix &A, Matrix &R, std::ofstream &file) {
 #ifdef DEBUG
   if (A.height >= A.width) {
     std::cout << "A podría tener columnas linealmente independientes\n";
@@ -428,7 +429,7 @@ void QRDecompositionParallel(const Matrix &A, Matrix &R, std::ofstream &file) {
  * @param d_w
  * @param d_w_size
  */
-__global__ void CUDAInitializeHouseholderVector(unsigned long index_column,
+__global__ void Thesis::CUDAInitializeHouseholderVector(unsigned long index_column,
                                                 CUDAMatrix d_R,
                                                 unsigned long R_height,
                                                 unsigned long R_width,
@@ -461,7 +462,7 @@ __global__ void CUDAInitializeHouseholderVector(unsigned long index_column,
  * @param d_w w column vector of first part of calculation
  * @param d_w_size size of w
  */
-__global__ void CUDAQRDecompositionOnIndexColumn(double beta1,
+__global__ void Thesis::CUDAQRDecompositionOnIndexColumn(double beta1,
                                                  unsigned long index_column,
                                                  CUDAMatrix d_R,
                                                  unsigned long R_height,
@@ -492,7 +493,7 @@ __global__ void CUDAQRDecompositionOnIndexColumn(double beta1,
  * @param R_height R.height
  * @param R_width R.width
  */
-__global__ void test_CUDAQRDecompositionOnIndexColumn(unsigned long index_column,
+__global__ void Thesis::test_CUDAQRDecompositionOnIndexColumn(unsigned long index_column,
                                                       CUDAMatrix d_R,
                                                       unsigned long R_height,
                                                       unsigned long R_width) {
@@ -515,7 +516,7 @@ __global__ void test_CUDAQRDecompositionOnIndexColumn(unsigned long index_column
  * @param Q Matrix that holds Householder multiplicacion transformations H_1H_2H_3...=Q of m x m dimension
  * @param R Matrix upper triangular of m x n dimension
  */
-void QRDecompositionCUDA(const Matrix &A, Matrix &R, std::ofstream &file) {
+void Thesis::QRDecompositionCUDA(const Matrix &A, Matrix &R, std::ofstream &file) {
   if (A.height >= A.width) {
     std::cout << "A podría tener columnas linealmente independientes\n";
   } else {

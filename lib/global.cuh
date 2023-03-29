@@ -15,6 +15,6 @@
 //#define TESTS
 
 // For double precision accuracy in the eigenvalues and eigenvectors, a tolerance of order 10−16 will suffice. Erricos
-#define tolerance 1e-6
+#define tolerance 1e-16
 
 #endif //SVD_THESIS_LIB_GLOBAL_CUH_

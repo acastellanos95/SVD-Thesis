@@ -18,7 +18,7 @@ enum MATRIX_LAYOUT{
   COL_MAJOR
 };
 
-std::tuple<double, double> non_sym_Schur(MATRIX_LAYOUT matrix_layout,
+std::tuple<double, double> non_sym_Schur_ordered(MATRIX_LAYOUT matrix_layout,
                                          size_t m,
                                          size_t n,
                                          const Matrix &A,
@@ -27,6 +27,15 @@ std::tuple<double, double> non_sym_Schur(MATRIX_LAYOUT matrix_layout,
                                          size_t q,
                                          double alpha,
                                          double beta);
+
+std::tuple<double, double> non_sym_Schur_non_ordered(const std::function<size_t(size_t, size_t, size_t)> &iterator,
+                                                     const size_t m,
+                                                     const size_t n,
+                                                     const Matrix &A,
+                                                     const size_t lda,
+                                                     const size_t p,
+                                                     const size_t q,
+                                                     const double alpha);
 
 size_t IteratorC(size_t i, size_t j, size_t ld);
 size_t IteratorR(size_t i, size_t j, size_t ld);
