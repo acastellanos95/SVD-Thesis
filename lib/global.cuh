@@ -7,9 +7,9 @@
 
 #define NT 16
 //#define DEBUG
-#define SEQUENTIAL
-#define REPORT
-//#define OMP
+//#define SEQUENTIAL
+//#define REPORT
+#define OMP
 //#define LAPACK
 //#define CUDA
 //#define TESTS

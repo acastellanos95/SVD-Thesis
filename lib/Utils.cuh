@@ -10,6 +10,7 @@
 #include <tuple>
 #include <stdexcept>
 #include <functional>
+#include <iostream>
 
 namespace Thesis {
 

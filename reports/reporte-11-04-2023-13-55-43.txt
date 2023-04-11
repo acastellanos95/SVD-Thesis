@@ -1,0 +1,22 @@
+NT: 16
+Number of threads: 1
+-------------------------------- Test 1 (Squared matrix SVD) sequential --------------------------------
+Dimensions, height: 100, width: 100
+SVD sequential time with U,V calculation: 6.11882
+max error between A and USV: 8.70415e-14
+-------------------------------- Test 1 (Squared matrix SVD) sequential --------------------------------
+Dimensions, height: 200, width: 200
+SVD sequential time with U,V calculation: 49.2448
+max error between A and USV: 0
+-------------------------------- Test 1 (Squared matrix SVD) sequential --------------------------------
+Dimensions, height: 300, width: 300
+SVD sequential time with U,V calculation: 169.696
+max error between A and USV: 0
+-------------------------------- Test 1 (Squared matrix SVD) sequential --------------------------------
+Dimensions, height: 400, width: 400
+SVD sequential time with U,V calculation: 399.09
+max error between A and USV: 0
+-------------------------------- Test 1 (Squared matrix SVD) sequential --------------------------------
+Dimensions, height: 500, width: 500
+SVD sequential time with U,V calculation: 780.077
+max error between A and USV: 0
