@@ -9,6 +9,13 @@ struct Matrix{
   unsigned long width;
   unsigned long height;
   double *elements;
+  Matrix(unsigned long height, unsigned long width){
+    this->width = width;
+    this->height = height;
+
+    this->elements = new double [height * width];
+  }
+
   ~Matrix(){
     delete []elements;
   }

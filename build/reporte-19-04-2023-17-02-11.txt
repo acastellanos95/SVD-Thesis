@@ -1,0 +1,6 @@
+NT: 16
+Number of threads: 1
+-------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+Dimensions, height: 50, width: 50
+SVD OMP time with U,V calculation: 0.0229862
+max error between A and USV: 0

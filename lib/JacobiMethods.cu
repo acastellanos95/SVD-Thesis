@@ -442,6 +442,63 @@ void omp_dgesvd(SVD_OPTIONS jobu,
     }
   }
 
+  // Create scheduler
+  size_t m_ordering = (n + 1) / 2;
+//  size_t number_of_parallel_ordering = n;
+//  size_t number_of_points_in_ordering = n/2;
+//  auto ordering_array = new std::tuple<size_t, size_t>[number_of_parallel_ordering * (number_of_points_in_ordering)];
+//
+//  for (size_t k = 1; k < m_ordering; ++k) {
+//    size_t p = 0;
+//    size_t p_trans = 0;
+//    size_t q_trans = 0;
+//    size_t indexPoint = 0;
+//    #pragma omp parallel for private(p, p_trans, q_trans)
+//    for (size_t q = m_ordering - k + 1; q <= n - k; ++q) {
+//      if (m_ordering - k + 1 <= q && q <= (2 * m_ordering) - (2 * k)) {
+//        p = ((2 * m_ordering) - (2 * k) + 1) - q;
+//      } else if ((2 * m_ordering) - (2 * k) < q && q <= (2 * m_ordering) - k - 1) {
+//        p = ((4 * m_ordering) - (2 * k)) - q;
+//      } else if ((2 * m_ordering) - k - 1 < q) {
+//        p = n;
+//      }
+//
+//      // Translate to (0,0)
+//      p_trans = p - 1;
+//      q_trans = q - 1;
+//
+//
+//      std::tuple<size_t, size_t> point = std::make_tuple(p_trans, q_trans);
+//      #pragma omp critical
+//      ordering_array[(k-1)*number_of_parallel_ordering + indexPoint++] = point;
+//    }
+//  }
+//
+//  for (size_t k = m_ordering; k < 2 * m_ordering; ++k) {
+//    size_t p = 0;
+//    size_t p_trans = 0;
+//    size_t q_trans = 0;
+//    size_t indexPoint = 0;
+//    #pragma omp parallel for private(p, p_trans, q_trans)
+//    for (size_t q = (4 * m_ordering) - n - k; q < (3 * m_ordering) - k; ++q) {
+//      if (q < (2 * m_ordering) - k + 1) {
+//        p = n;
+//      } else if ((2 * m_ordering) - k + 1 <= q && q <= (4 * m_ordering) - (2 * k) - 1) {
+//        p = ((4 * m_ordering) - (2 * k)) - q;
+//      } else if ((4 * m_ordering) - (2 * k) - 1 < q) {
+//        p = ((6 * m_ordering) - (2 * k) - 1) - q;
+//      }
+//
+//      // Translate to (0,0)
+//      p_trans = p - 1;
+//      q_trans = q - 1;
+//
+//      std::tuple<size_t, size_t> point = std::make_tuple(p_trans, q_trans);
+//      #pragma omp critical
+//      ordering_array[(k-1)*number_of_parallel_ordering + indexPoint++] = point;
+//    }
+//  }
+
 #ifdef DEBUG
   // Report Matrix A^T * A
   std::cout << std::fixed << std::setprecision(3) << "A^T * A: \n";
@@ -459,9 +516,8 @@ void omp_dgesvd(SVD_OPTIONS jobu,
   // Stopping condition in Hogben, L. (Ed.). (2013). Handbook of Linear Algebra (2nd ed.). Chapman and Hall/CRC. https://doi.org/10.1201/b16113
   size_t istop = 0;
   size_t stop_condition = n * (n - 1) / 2;
-  size_t m_ordering = (n + 1) / 2;
   uint16_t reps = 0;
-  uint16_t maxIterations = 30;
+  uint16_t maxIterations = 1;
 
   do {
     istop = 0;
@@ -487,9 +543,10 @@ void omp_dgesvd(SVD_OPTIONS jobu,
 
         double alpha = 0.0, beta = 0.0, gamma = 0.0;
         // \alpha = a_p^T\cdot a_q, \beta = a_p^T\cdot a_p, \gamma = a_q^T\cdot a_q
+        double tmp_p, tmp_q;
         for (size_t i = 0; i < m; ++i) {
-          double tmp_p = A.elements[iterator(i, p_trans, lda)];
-          double tmp_q = A.elements[iterator(i, q_trans, lda)];
+          tmp_p = A.elements[iterator(i, p_trans, lda)];
+          tmp_q = A.elements[iterator(i, q_trans, lda)];
           alpha += tmp_p * tmp_q;
           beta += tmp_p * tmp_p;
           gamma += tmp_q * tmp_q;
@@ -498,15 +555,17 @@ void omp_dgesvd(SVD_OPTIONS jobu,
         // abs(a_p^T\cdot a_q) / sqrt((a_p^T\cdot a_p)(a_q^T\cdot a_q))
         double convergence_value = abs(alpha) / sqrt(beta * gamma);
 
-        if (convergence_value > tolerance) {
+//        if (convergence_value > tolerance) {
 
           // Schur
           auto [c_schur, s_schur] = non_sym_Schur_non_ordered(iterator, m, n, A, lda, p_trans, q_trans, alpha);
 
-          double tmp_p, tmp_q;
+          double tmp_A_p, tmp_A_q;
           for (size_t i = 0; i < m; ++i) {
-            tmp_p = c_schur * A.elements[iterator(i, p_trans, lda)] - s_schur * A.elements[iterator(i, q_trans, lda)];
-            tmp_q = s_schur * A.elements[iterator(i, p_trans, lda)] + c_schur * A.elements[iterator(i, q_trans, lda)];
+            tmp_A_p = A.elements[iterator(i, p_trans, lda)];
+            tmp_A_q = A.elements[iterator(i, q_trans, lda)];
+            tmp_p = c_schur * tmp_A_p - s_schur * tmp_A_q;
+            tmp_q = s_schur * tmp_A_p + c_schur * tmp_A_q;
             A.elements[iterator(i, p_trans, lda)] = tmp_p;
             A.elements[iterator(i, q_trans, lda)] = tmp_q;
           }
@@ -519,9 +578,9 @@ void omp_dgesvd(SVD_OPTIONS jobu,
               V.elements[iterator(i, q_trans, ldv)] = tmp_q;
             }
           }
-        } else {
-          ++istop;
-        }
+//        } else {
+//          ++istop;
+//        }
 
 #ifdef DEBUG
         // Report Matrix A^T * A
@@ -560,9 +619,10 @@ void omp_dgesvd(SVD_OPTIONS jobu,
 
         double alpha = 0.0, beta = 0.0, gamma = 0.0;
         // \alpha = a_p^T\cdot a_q, \beta = a_p^T\cdot a_p, \gamma = a_q^T\cdot a_q
+        double tmp_p, tmp_q;
         for (size_t i = 0; i < m; ++i) {
-          double tmp_p = A.elements[iterator(i, p_trans, lda)];
-          double tmp_q = A.elements[iterator(i, q_trans, lda)];
+          tmp_p = A.elements[iterator(i, p_trans, lda)];
+          tmp_q = A.elements[iterator(i, q_trans, lda)];
           alpha += tmp_p * tmp_q;
           beta += tmp_p * tmp_p;
           gamma += tmp_q * tmp_q;
@@ -571,15 +631,17 @@ void omp_dgesvd(SVD_OPTIONS jobu,
         // (a_p^T\cdot a_q)^2 / (a_p^T\cdot a_p)(a_q^T\cdot a_q)
         double convergence_value = abs(alpha) / sqrt(beta * gamma);
 
-        if (convergence_value > tolerance) {
+//        if (convergence_value > tolerance) {
           // (a_p^T\cdot a_q)^2 / (a_p^T\cdot a_p)(a_q^T\cdot a_q) > tolerance
           // Schur
           auto [c_schur, s_schur] = non_sym_Schur_non_ordered(iterator, m, n, A, lda, p_trans, q_trans, alpha);
 
-          double tmp_p, tmp_q;
+          double A_tmp_p, A_tmp_q;
           for (size_t i = 0; i < m; ++i) {
-            tmp_p = c_schur * A.elements[iterator(i, p_trans, lda)] - s_schur * A.elements[iterator(i, q_trans, lda)];
-            tmp_q = s_schur * A.elements[iterator(i, p_trans, lda)] + c_schur * A.elements[iterator(i, q_trans, lda)];
+            A_tmp_p = A.elements[iterator(i, p_trans, lda)];
+            A_tmp_q = A.elements[iterator(i, q_trans, lda)];
+            tmp_p = c_schur * A_tmp_p - s_schur * A_tmp_q;
+            tmp_q = s_schur * A_tmp_p + c_schur * A_tmp_q;
             A.elements[iterator(i, p_trans, lda)] = tmp_p;
             A.elements[iterator(i, q_trans, lda)] = tmp_q;
           }
@@ -591,9 +653,9 @@ void omp_dgesvd(SVD_OPTIONS jobu,
               V.elements[iterator(i, q_trans, ldv)] = tmp_q;
             }
           }
-        } else {
-          ++istop;
-        }
+//        } else {
+//          ++istop;
+//        }
 
 #ifdef DEBUG
         // Report Matrix A^T * A
@@ -626,7 +688,9 @@ void omp_dgesvd(SVD_OPTIONS jobu,
       std::cout << '\n';
     }
 #endif
-  } while (++reps < maxIterations && istop < stop_condition);
+  } while (++reps < maxIterations);
+
+  std::cout << "How many repetitions?: " << reps << "\n";
 
   // Compute \Sigma
   #pragma omp parallel for
@@ -653,5 +717,8 @@ void omp_dgesvd(SVD_OPTIONS jobu,
       }
     }
   }
+
+//  delete []ordering_array;
 }
+
 }

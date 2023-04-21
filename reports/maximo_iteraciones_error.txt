@@ -1,0 +1,65 @@
+size: 1000
+maximum iterations: 1
+max error between A and USV: 6.03961e-14
+maximum iterations: 2
+max error between A and USV: 3.15303e-14
+maximum iterations: 3
+max error between A and USV: 3.26406e-14
+maximum iterations: 4
+max error between A and USV: 2.77556e-14
+maximum iterations: 5
+max error between A and USV: 3.5083e-14
+maximum iterations: 6
+max error between A and USV: 3.24185e-14
+size: 2000
+maximum iterations: 1
+max error between A and USV: 4.9738e-14
+maximum iterations: 2
+max error between A and USV: 3.79696e-14
+maximum iterations: 3
+max error between A and USV: 4.06342e-14
+maximum iterations: 4
+max error between A and USV: 4.32987e-14
+maximum iterations: 5
+max error between A and USV: 3.90799e-14
+maximum iterations: 6
+max error between A and USV: 4.26326e-14
+size: 3000
+maximum iterations: 1
+max error between A and USV: 7.99361e-14
+maximum iterations: 2
+max error between A and USV: 7.99361e-14
+maximum iterations: 3
+max error between A and USV: 7.28306e-14
+maximum iterations: 4
+max error between A and USV: 7.26086e-14
+maximum iterations: 5
+max error between A and USV: 7.21645e-14
+maximum iterations: 6
+max error between A and USV: 7.10543e-14
+size: 4000
+maximum iterations: 1
+max error between A and USV: 0
+maximum iterations: 2
+max error between A and USV: 0
+maximum iterations: 3
+max error between A and USV: 0
+maximum iterations: 4
+max error between A and USV: 0
+maximum iterations: 5
+max error between A and USV: 0
+maximum iterations: 6
+max error between A and USV: 0
+size: 5000
+maximum iterations: 1
+max error between A and USV: 0
+maximum iterations: 2
+max error between A and USV: 0
+maximum iterations: 3
+max error between A and USV: 0
+maximum iterations: 4
+max error between A and USV: 0
+maximum iterations: 5
+max error between A and USV: 0
+maximum iterations: 6
+max error between A and USV: 0

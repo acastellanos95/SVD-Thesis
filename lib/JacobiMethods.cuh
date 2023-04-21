@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <omp.h>
 #include "Matrix.cuh"
 #include "global.cuh"
 #include "Utils.cuh"

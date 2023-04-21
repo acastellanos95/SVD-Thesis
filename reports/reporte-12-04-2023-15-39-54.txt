@@ -1,0 +1,11 @@
+NT: 16
+Number of threads: 1
+Row major order
+-------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+Dimensions, height: 500, width: 500
+SVD OMP time with U,V calculation: 47.9299
+max error between A and USV: 4.44755e-13
+-------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+Dimensions, height: 1000, width: 1000
+SVD OMP time with U,V calculation: 362.808
+max error between A and USV: 1.20504e-12
