@@ -9,9 +9,9 @@
 //#define DEBUG
 //#define SEQUENTIAL
 //#define REPORT
-#define OMP
+//#define OMP
 //#define LAPACK
-//#define CUDA
+#define CUDA
 //#define TESTS
 
 // For double precision accuracy in the eigenvalues and eigenvectors, a tolerance of order 10−16 will suffice. Erricos

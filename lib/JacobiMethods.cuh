@@ -58,17 +58,20 @@ void omp_dgesvd(SVD_OPTIONS jobu,
                 size_t ldu,
                 Matrix &V,
                 size_t ldv);
+
 void cuda_dgesvd(SVD_OPTIONS jobu,
                  SVD_OPTIONS jobv,
                  size_t m,
                  size_t n,
-                 const Matrix &A,
+                 CUDAMatrix &A,
                  size_t lda,
-                 Matrix &s,
-                 Matrix &U,
+                 CUDAMatrix &s,
+                 CUDAMatrix &U,
                  size_t ldu,
-                 Matrix &V,
+                 CUDAMatrix &V,
                  size_t ldv);
+
+__global__ void initialize_V();
 }
 
 #endif //SVD_THESIS_LIB_JACOBIMETHODS_CUH_

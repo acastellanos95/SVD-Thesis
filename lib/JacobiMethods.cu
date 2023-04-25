@@ -2,6 +2,7 @@
 // Created by andre on 2/03/23.
 //
 
+#include <cublas_v2.h>
 #include "JacobiMethods.cuh"
 
 namespace Thesis {
@@ -719,6 +720,176 @@ void omp_dgesvd(SVD_OPTIONS jobu,
   }
 
 //  delete []ordering_array;
+}
+
+void cuda_dgesvd(SVD_OPTIONS jobu,
+                 SVD_OPTIONS jobv,
+                 size_t m,
+                 size_t n,
+                 CUDAMatrix &A,
+                 size_t lda,
+                 CUDAMatrix &s,
+                 CUDAMatrix &U,
+                 size_t ldu,
+                 CUDAMatrix &V,
+                 size_t ldv){
+
+  // Create a handle for CUBLAS
+  cublasHandle_t handle;
+  cublasCreate(&handle);
+
+  // Stopping condition in Hogben, L. (Ed.). (2013). Handbook of Linear Algebra (2nd ed.). Chapman and Hall/CRC. https://doi.org/10.1201/b16113
+  size_t m_ordering = (n + 1) / 2;
+  std::cout << "m_ordering: " << m_ordering << "\n";
+
+  // Ordering in  A. Sameh. On Jacobi and Jacobi-like algorithms for a parallel computer. Math. Comput., 25:579–590,
+  // 1971
+  for (size_t k = 1; k < m_ordering; ++k) {
+    size_t p = 0;
+    size_t p_trans = 0;
+    size_t q_trans = 0;
+    for (size_t q = m_ordering - k + 1; q <= n - k; ++q) {
+      if (m_ordering - k + 1 <= q && q <= (2 * m_ordering) - (2 * k)) {
+        p = ((2 * m_ordering) - (2 * k) + 1) - q;
+      } else if ((2 * m_ordering) - (2 * k) < q && q <= (2 * m_ordering) - k - 1) {
+        p = ((4 * m_ordering) - (2 * k)) - q;
+      } else if ((2 * m_ordering) - k - 1 < q) {
+        p = n;
+      }
+
+      // Translate to (0,0)
+      p_trans = p - 1;
+      q_trans = q - 1;
+
+      double alpha = 0.0, beta = 0.0, gamma = 0.0;
+      // \alpha = a_p^T\cdot a_q, \beta = a_p^T\cdot a_p, \gamma = a_q^T\cdot a_q
+      cublasDdot (handle, m,
+              reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
+              reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
+          &alpha);
+      cublasDdot (handle, m,
+              reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
+              reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
+              &beta);
+      cublasDdot (handle, m,
+              reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
+              reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
+              &gamma);
+
+      // abs(a_p^T\cdot a_q) / sqrt((a_p^T\cdot a_p)(a_q^T\cdot a_q))
+      double convergence_value = abs(alpha) / sqrt(beta * gamma);
+
+      if (convergence_value > tolerance) {
+        // Schur
+        if(abs(alpha) > tolerance){
+          double tau = (gamma - beta) / (2.0 * alpha);
+          double t = 0.0;
+
+          if(tau >= 0){
+            t = 1.0 / (tau + sqrt(1 + (tau * tau)));
+          } else {
+            t = 1.0 / (tau - sqrt(1 + (tau * tau)));
+          }
+
+          const double c_schur = 1.0 / sqrt(1 + (t * t));
+          const double s_schur = t * c_schur;
+
+          cublasDrot(handle, m,
+                 A.elements + m * q_trans, 1,
+                 A.elements + m * p_trans, 1,
+                 &c_schur, &s_schur);
+
+          cublasDrot(handle, m,
+                     V.elements + m * q_trans, 1,
+                     V.elements + m * p_trans, 1,
+                     &c_schur, &s_schur);
+        }
+      }
+    }
+  }
+
+  for (size_t k = m_ordering; k < 2 * m_ordering; ++k) {
+    size_t p = 0;
+    size_t p_trans = 0;
+    size_t q_trans = 0;
+    for (size_t q = (4 * m_ordering) - n - k; q < (3 * m_ordering) - k; ++q) {
+      if (q < (2 * m_ordering) - k + 1) {
+        p = n;
+      } else if ((2 * m_ordering) - k + 1 <= q && q <= (4 * m_ordering) - (2 * k) - 1) {
+        p = ((4 * m_ordering) - (2 * k)) - q;
+      } else if ((4 * m_ordering) - (2 * k) - 1 < q) {
+        p = ((6 * m_ordering) - (2 * k) - 1) - q;
+      }
+
+      // Translate to (0,0)
+      p_trans = p - 1;
+      q_trans = q - 1;
+
+      double alpha = 0.0, beta = 0.0, gamma = 0.0;
+      // \alpha = a_p^T\cdot a_q, \beta = a_p^T\cdot a_p, \gamma = a_q^T\cdot a_q
+      cublasDdot (handle, m,
+                  reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
+                  reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
+                  &alpha);
+      cublasDdot (handle, m,
+                  reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
+                  reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
+                  &beta);
+      cublasDdot (handle, m,
+                  reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
+                  reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
+                  &gamma);
+
+      // abs(a_p^T\cdot a_q) / sqrt((a_p^T\cdot a_p)(a_q^T\cdot a_q))
+      double convergence_value = abs(alpha) / sqrt(beta * gamma);
+
+      if (convergence_value > tolerance) {
+        // Schur
+        if(abs(alpha) > tolerance){
+          double tau = (gamma - beta) / (2.0 * alpha);
+          double t = 0.0;
+
+          if(tau >= 0){
+            t = 1.0 / (tau + sqrt(1 + (tau * tau)));
+          } else {
+            t = 1.0 / (tau - sqrt(1 + (tau * tau)));
+          }
+
+          const double c_schur = 1.0 / sqrt(1 + (t * t));
+          const double s_schur = t * c_schur;
+
+          cublasDrot(handle, m,
+                     A.elements + m * q_trans, 1,
+                     A.elements + m * p_trans, 1,
+                     &c_schur, &s_schur);
+
+          cublasDrot(handle, m,
+                     V.elements + m * q_trans, 1,
+                     V.elements + m * p_trans, 1,
+                     &c_schur, &s_schur);
+        }
+      }
+    }
+  }
+
+  std::cout << "Finalized jacobi sweep!!\n";
+
+  // Compute \Sigma
+  for (size_t k = 0; k < std::min(m, n); ++k) {
+    cublasDnrm2(handle, m,reinterpret_cast<const double *>(A.elements + m * k), 1, s.elements + k);
+  }
+  std::cout << "Finalized normalization!!\n";
+
+  //Compute U
+//  for (size_t i = 0; i < m; ++i) {
+//    double scale;
+//    cudaMemcpy(&scale, s.elements + i, sizeof(double), cudaMemcpyDeviceToHost);
+//    scale = 1.0 / scale;
+//    cublasDscal(handle, m, reinterpret_cast<const double *>(&scale), U.elements + m * i, 1);
+//  }
+
+  // Destroy the handle
+  cublasDestroy(handle);
 }
 
 }

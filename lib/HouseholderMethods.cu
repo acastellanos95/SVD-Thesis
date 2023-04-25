@@ -537,10 +537,10 @@ void Thesis::QRDecompositionCUDA(const Matrix &A, Matrix &R, std::ofstream &file
   unsigned long A_width = A.width;
 
   // Make CUDA Matrices
-  CUDAMatrix d_R;
+  CUDAMatrix d_R(R.height, R.width);
   d_R.height = R.height;
   d_R.width = R.width;
-  cudaMalloc(&d_R.elements, d_R.height * d_R.width * sizeof(double));
+//  cudaMalloc(&d_R.elements, d_R.height * d_R.width * sizeof(double));
 
   // Copy R int d_R
   cudaMemcpy(d_R.elements, R.elements, d_R.height * d_R.width * sizeof(double), cudaMemcpyHostToDevice);
