@@ -9,9 +9,11 @@
 #include "../lib/Utils.cuh"
 #include "../lib/Matrix.cuh"
 #include <random>
+#include <cublas_v2.h>
 
 namespace Thesis {
   void max_iterations_error();
+  void compare_cuda_operations();
 }
 
 #endif //SVD_THESIS_TESTS_TESTS_CUH_

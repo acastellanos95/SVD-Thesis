@@ -17,11 +17,12 @@ int main() {
   const unsigned seed = 1000000;
 
 #ifdef TESTS
-  Thesis::max_iterations_error();
+//  Thesis::max_iterations_error();
+//  Thesis::compare_cuda_operations();
 #endif
 
   size_t begin = 1000;
-  size_t end = 1000;
+  size_t end = 5000;
   size_t delta = 1000;
   auto t = std::time(nullptr);
   auto tm = *std::localtime(&t);
@@ -212,29 +213,32 @@ int main() {
 #endif
     {
 #ifdef OMP
-      // Build matrix A and R
-      /* -------------------------------- Test 1 (Squared matrix SVD) OMP -------------------------------- */
-      file_output
-          << "-------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------\n";
-      std::cout
-          << "-------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------\n";
+      double time_avg = 0.0;
+      for(auto i_repeat = 0; i_repeat < 10; ++i_repeat){
+        {
+          // Build matrix A and R
+          /* -------------------------------- Test 1 (Squared matrix SVD) OMP -------------------------------- */
+          file_output
+              << "-------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------\n";
+          std::cout
+              << "-------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------\n";
 
-      const size_t height = begin;
-      const size_t width = begin;
+          const size_t height = begin;
+          const size_t width = begin;
 
-      file_output << "Dimensions, height: " << height << ", width: " << width << "\n";
-      std::cout << "Dimensions, height: " << height << ", width: " << width << "\n";
+          file_output << "Dimensions, height: " << height << ", width: " << width << "\n";
+          std::cout << "Dimensions, height: " << height << ", width: " << width << "\n";
 
-      Matrix A(height, width), U(height, height), V(width, width), s(1, std::min(A.height, A.width)), A_copy(height, width);
+          Matrix A(height, width), U(height, height), V(width, width), s(1, std::min(A.height, A.width)), A_copy(height, width);
 
-      const unsigned long A_height = A.height, A_width = A.width;
+          const unsigned long A_height = A.height, A_width = A.width;
 
-      std::fill_n(U.elements, U.height * U.width, 0.0);
-      std::fill_n(V.elements, V.height * V.width, 0.0);
-      std::fill_n(A.elements, A.height * A.width, 0.0);
-      std::fill_n(A_copy.elements, A_copy.height * A_copy.width, 0.0);
+          std::fill_n(U.elements, U.height * U.width, 0.0);
+          std::fill_n(V.elements, V.height * V.width, 0.0);
+          std::fill_n(A.elements, A.height * A.width, 0.0);
+          std::fill_n(A_copy.elements, A_copy.height * A_copy.width, 0.0);
 
-      // Create a random matrix
+          // Create a random matrix
 //    std::default_random_engine e(seed);
 //    std::uniform_real_distribution<double> uniform_dist(1.0, 2.0);
 //    for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
@@ -244,26 +248,26 @@ int main() {
 //      }
 //    }
 
-      // Select iterator
-      auto iterator = Thesis::IteratorC;
+          // Select iterator
+          auto iterator = Thesis::IteratorC;
 
-      // Create a random bidiagonal matrix
-      std::default_random_engine e(seed);
-      std::uniform_real_distribution<double> uniform_dist(0.0, 1.0);
-      for (size_t indexRow = 0; indexRow < std::min<size_t>(A_height, A_width); ++indexRow) {
-        double value = uniform_dist(e);
-        A.elements[iterator(indexRow, indexRow, A_height)] = value;
-        A_copy.elements[iterator(indexRow, indexRow, A_height)] = value;
-      }
+          // Create a random bidiagonal matrix
+          std::default_random_engine e(seed);
+          std::uniform_real_distribution<double> uniform_dist(0.0, 1.0);
+          for (size_t indexRow = 0; indexRow < std::min<size_t>(A_height, A_width); ++indexRow) {
+            double value = uniform_dist(e);
+            A.elements[iterator(indexRow, indexRow, A_height)] = value;
+            A_copy.elements[iterator(indexRow, indexRow, A_height)] = value;
+          }
 
-      for (size_t indexRow = 0; indexRow < (std::min<size_t>(A_height, A_width) - 1); ++indexRow) {
-        double value = uniform_dist(e);
-        A.elements[iterator(indexRow, indexRow + 1, A_height)] = value;
-        A_copy.elements[iterator(indexRow, indexRow + 1, A_height)] = value;
-      }
+          for (size_t indexRow = 0; indexRow < (std::min<size_t>(A_height, A_width) - 1); ++indexRow) {
+            double value = uniform_dist(e);
+            A.elements[iterator(indexRow, indexRow + 1, A_height)] = value;
+            A_copy.elements[iterator(indexRow, indexRow + 1, A_height)] = value;
+          }
 
 #ifdef REPORT
-      // Report Matrix A
+          // Report Matrix A
   file_output << std::fixed << std::setprecision(3) << "A: \n";
   std::cout << std::fixed << std::setprecision(3) << "A: \n";
   for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
@@ -288,44 +292,45 @@ int main() {
 //    }
 #endif
 
-      // Calculate SVD decomposition
-      double ti = omp_get_wtime();
-      Thesis::omp_dgesvd(Thesis::AllVec,
-                         Thesis::AllVec,
-                         A.height,
-                         A.width,
-                         Thesis::COL_MAJOR,
-                         A,
-                         A_height,
-                         s,
-                         U,
-                         A_height,
-                         V,
-                         A_width);
-      double tf = omp_get_wtime();
-      double time = tf - ti;
+          // Calculate SVD decomposition
+          double ti = omp_get_wtime();
+          Thesis::omp_dgesvd(Thesis::AllVec,
+                             Thesis::AllVec,
+                             A.height,
+                             A.width,
+                             Thesis::COL_MAJOR,
+                             A,
+                             A_height,
+                             s,
+                             U,
+                             A_height,
+                             V,
+                             A_width);
+          double tf = omp_get_wtime();
+          double time = tf - ti;
+          time_avg += time;
 
-      file_output << "SVD OMP time with U,V calculation: " << time << "\n";
-      std::cout << "SVD OMP time with U,V calculation: " << time << "\n";
+          file_output << "SVD OMP time with U,V calculation: " << time << "\n";
+          std::cout << "SVD OMP time with U,V calculation: " << time << "\n";
 
-      double maxError = 0.0;
-      for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
-        for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
-          double value = 0.0;
-          for (size_t k_dot = 0; k_dot < A_width; ++k_dot) {
-            value += U.elements[iterator(indexRow, k_dot, A_height)] * s.elements[k_dot]
-                * V.elements[iterator(indexCol, k_dot, A_height)];
-          }
-          double diff = std::abs(A_copy.elements[iterator(indexRow, indexCol, A_height)] - value);
-          maxError = std::max<double>(maxError, diff);
-        }
-      }
-
-      file_output << "max error between A and USV: " << maxError << "\n";
-      std::cout << "max error between A and USV: " << maxError << "\n";
+//          double maxError = 0.0;
+//          for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
+//            for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
+//              double value = 0.0;
+//              for (size_t k_dot = 0; k_dot < A_width; ++k_dot) {
+//                value += U.elements[iterator(indexRow, k_dot, A_height)] * s.elements[k_dot]
+//                    * V.elements[iterator(indexCol, k_dot, A_height)];
+//              }
+//              double diff = std::abs(A_copy.elements[iterator(indexRow, indexCol, A_height)] - value);
+//              maxError = std::max<double>(maxError, diff);
+//            }
+//          }
+//
+//          file_output << "max error between A and USV: " << maxError << "\n";
+//          std::cout << "max error between A and USV: " << maxError << "\n";
 
 #ifdef REPORT
-      // Report Matrix A=USV
+          // Report Matrix A=USV
   std::cout << std::fixed << std::setprecision(3) << "A=USV^T: \n";
   for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
     for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
@@ -373,34 +378,41 @@ int main() {
     std::cout << '\n';
   }
 #endif
+        }
+      }
+
+      std::cout << "Tiempo promedio: " << (time_avg / 10.0) << "\n";
 #endif
     }
 
 #ifdef CUDA
     {
-      // Build matrix A and R
-      /* -------------------------------- Test 1 (Squared matrix SVD) CUDA -------------------------------- */
-      file_output
-          << "-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------\n";
-      std::cout
-          << "-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------\n";
+      double time_avg = 0.0;
+      for(auto i_repeat = 0; i_repeat < 10; ++i_repeat){
+        {
+          // Build matrix A and R
+          /* -------------------------------- Test 1 (Squared matrix SVD) CUDA -------------------------------- */
+          file_output
+              << "-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------\n";
+          std::cout
+              << "-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------\n";
 
-      const size_t height = begin;
-      const size_t width = begin;
+          const size_t height = begin;
+          const size_t width = begin;
 
-      file_output << "Dimensions, height: " << height << ", width: " << width << "\n";
-      std::cout << "Dimensions, height: " << height << ", width: " << width << "\n";
+          file_output << "Dimensions, height: " << height << ", width: " << width << "\n";
+          std::cout << "Dimensions, height: " << height << ", width: " << width << "\n";
 
-      Matrix A(height, width), U(height, height), V(width, width), s(1, std::min(A.height, A.width)), A_copy(height, width);
+          Matrix A(height, width), U(height, height), V(width, width), s(1, std::min(A.height, A.width)), A_copy(height, width);
 
-      const unsigned long A_height = A.height, A_width = A.width;
+          const unsigned long A_height = A.height, A_width = A.width;
 
-      std::fill_n(U.elements, U.height * U.width, 0.0);
-      std::fill_n(V.elements, V.height * V.width, 0.0);
-      std::fill_n(A.elements, A.height * A.width, 0.0);
-      std::fill_n(A_copy.elements, A_copy.height * A_copy.width, 0.0);
+          std::fill_n(U.elements, U.height * U.width, 0.0);
+          std::fill_n(V.elements, V.height * V.width, 0.0);
+          std::fill_n(A.elements, A.height * A.width, 0.0);
+          std::fill_n(A_copy.elements, A_copy.height * A_copy.width, 0.0);
 
-      // Create a random matrix
+          // Create a random matrix
 //    std::default_random_engine e(seed);
 //    std::uniform_real_distribution<double> uniform_dist(1.0, 2.0);
 //    for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
@@ -410,33 +422,44 @@ int main() {
 //      }
 //    }
 
-      // Select iterator
-      auto iterator = Thesis::IteratorC;
+          // Select iterator
+          auto iterator = Thesis::IteratorC;
 
-      // Create a random bidiagonal matrix
-      std::default_random_engine e(seed);
-      std::uniform_real_distribution<double> uniform_dist(0.0, 1.0);
-      for (size_t indexRow = 0; indexRow < std::min<size_t>(A_height, A_width); ++indexRow) {
-        double value = uniform_dist(e);
-        A.elements[iterator(indexRow, indexRow, A_height)] = value;
-        A_copy.elements[iterator(indexRow, indexRow, A_height)] = value;
-      }
+          // Create a random bidiagonal matrix
+//      std::default_random_engine e(seed);
+//      std::uniform_real_distribution<double> uniform_dist(0.0, 1.0);
+//      for (size_t indexRow = 0; indexRow < std::min<size_t>(A_height, A_width); ++indexRow) {
+//        double value = uniform_dist(e);
+//        A.elements[iterator(indexRow, indexRow, A_height)] = value;
+//        A_copy.elements[iterator(indexRow, indexRow, A_height)] = value;
+//      }
+//
+//      for (size_t indexRow = 0; indexRow < (std::min<size_t>(A_height, A_width) - 1); ++indexRow) {
+//        double value = uniform_dist(e);
+//        A.elements[iterator(indexRow, indexRow + 1, A_height)] = value;
+//        A_copy.elements[iterator(indexRow, indexRow + 1, A_height)] = value;
+//      }
 
-      for (size_t indexRow = 0; indexRow < (std::min<size_t>(A_height, A_width) - 1); ++indexRow) {
-        double value = uniform_dist(e);
-        A.elements[iterator(indexRow, indexRow + 1, A_height)] = value;
-        A_copy.elements[iterator(indexRow, indexRow + 1, A_height)] = value;
-      }
+          // Create R matrix
+          std::default_random_engine e(seed);
+          std::uniform_real_distribution<double> uniform_dist(0.0, 1.0);
+          for (size_t indexRow = 0; indexRow < std::min<size_t>(A_height, A_width); ++indexRow) {
+            for (size_t indexCol = indexRow; indexCol < std::min<size_t>(A_height, A_width); ++indexCol) {
+              double value = uniform_dist(e);
+              A.elements[iterator(indexRow, indexCol, A_height)] = value;
+              A_copy.elements[iterator(indexRow, indexCol, A_height)] = value;
+            }
+          }
 
-      for (size_t i = 0; i < A.width; ++i) {
-        V.elements[iterator(i, i, A_width)] = 1.0;
-      }
+          for (size_t i = 0; i < A.width; ++i) {
+            V.elements[iterator(i, i, A_width)] = 1.0;
+          }
 
-      CUDAMatrix d_A( A), d_s(s), d_U(U), d_V(V);
-      std::cout << "Initialized!!\n";
+          CUDAMatrix d_A( A), d_s(s), d_U(U), d_V(V);
+          std::cout << "Initialized!!\n";
 
 #ifdef REPORT
-      // Report Matrix A
+          // Report Matrix A
   file_output << std::fixed << std::setprecision(3) << "A: \n";
   std::cout << std::fixed << std::setprecision(3) << "A: \n";
   for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
@@ -461,45 +484,46 @@ int main() {
 //    }
 #endif
 
-      // Calculate SVD decomposition
-      double ti = omp_get_wtime();
-      Thesis::cuda_dgesvd(Thesis::AllVec,
-                         Thesis::AllVec,
-                         A.height,
-                         A.width,
-                         d_A,
-                         A_height,
-                         d_s,
-                         d_U,
-                         A_height,
-                         d_V,
-                         A_width);
-      double tf = omp_get_wtime();
-      double time = tf - ti;
+          // Calculate SVD decomposition
+          double ti = omp_get_wtime();
+          Thesis::cuda_dgesvd(Thesis::AllVec,
+                              Thesis::AllVec,
+                              A.height,
+                              A.width,
+                              d_A,
+                              A_height,
+                              d_s,
+                              d_U,
+                              A_height,
+                              d_V,
+                              A_width);
+          double tf = omp_get_wtime();
+          double time = tf - ti;
+          time_avg += time;
 
-      file_output << "SVD CUDA time with U,V calculation: " << time << "\n";
-      std::cout << "SVD CUDA time with U,V calculation: " << time << "\n";
+          file_output << "SVD CUDA time with U,V calculation: " << time << "\n";
+          std::cout << "SVD CUDA time with U,V calculation: " << time << "\n";
 
-      d_A.hostCopy(A), d_s.hostCopy(s), d_U.hostCopy(U), d_V.hostCopy(V);
+          d_A.copy_to_host(A), d_s.copy_to_host(s), d_U.copy_to_host(U), d_V.copy_to_host(V);
 
-      double maxError = 0.0;
-      for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
-        for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
-          double value = 0.0;
-          for (size_t k_dot = 0; k_dot < A_width; ++k_dot) {
-            value += U.elements[iterator(indexRow, k_dot, A_height)] * s.elements[k_dot]
-                * V.elements[iterator(indexCol, k_dot, A_height)];
-          }
-          double diff = std::abs(A_copy.elements[iterator(indexRow, indexCol, A_height)] - value);
-          maxError = std::max<double>(maxError, diff);
-        }
-      }
-
-      file_output << "max error between A and USV: " << maxError << "\n";
-      std::cout << "max error between A and USV: " << maxError << "\n";
+//          double maxError = 0.0;
+//          for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
+//            for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
+//              double value = 0.0;
+//              for (size_t k_dot = 0; k_dot < A_width; ++k_dot) {
+//                value += U.elements[iterator(indexRow, k_dot, A_height)] * s.elements[k_dot]
+//                    * V.elements[iterator(indexCol, k_dot, A_height)];
+//              }
+//              double diff = std::abs(A_copy.elements[iterator(indexRow, indexCol, A_height)] - value);
+//              maxError = std::max<double>(maxError, diff);
+//            }
+//          }
+//
+//          file_output << "max error between A and USV: " << maxError << "\n";
+//          std::cout << "max error between A and USV: " << maxError << "\n";
 
 #ifdef REPORT
-      // Report Matrix A=USV
+          // Report Matrix A=USV
   std::cout << std::fixed << std::setprecision(3) << "A=USV^T: \n";
   for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
     for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
@@ -547,7 +571,11 @@ int main() {
     std::cout << '\n';
   }
 #endif
-      d_A.free(), d_s.free(), d_U.free(), d_V.free();
+          d_A.free(), d_s.free(), d_U.free(), d_V.free();
+        }
+      }
+
+      std::cout << "Tiempo promedio: " << (time_avg / 10.0) << "\n";
     }
 #endif
   }

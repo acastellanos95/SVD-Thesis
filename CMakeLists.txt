@@ -6,7 +6,7 @@ set(CMAKE_CUDA_COMPILER_ID NVIDIA)
 set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
 set(CMAKE_CUDA_HOST_COMPILER /usr/bin/g++)
 set(CMAKE_CUDA_STANDARD 17)
-add_compile_options(-G)
+#add_compile_options(-G)
 
 project(SVD_Thesis LANGUAGES CUDA CXX)
 

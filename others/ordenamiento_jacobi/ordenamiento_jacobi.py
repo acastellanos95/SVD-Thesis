@@ -1,7 +1,7 @@
 import math
 import numpy as np
 
-n = 100
+n = 7
 m = math.floor((n + 1) / 2)
 print(m)
 

@@ -52,11 +52,25 @@ struct CUDAMatrix{
                cudaMemcpyHostToDevice);
   }
 
-  void hostCopy(Matrix &matrix) const{
+  void copy_to_host(Matrix &matrix) const{
     cudaMemcpy(matrix.elements,
                this->elements,
                matrix.width * matrix.height * sizeof(double),
                cudaMemcpyDeviceToHost);
+  }
+
+  void copy_from_host(Matrix &matrix) const{
+    cudaMemcpy(this->elements,
+               matrix.elements,
+               width * height * sizeof(double),
+               cudaMemcpyHostToDevice);
+  }
+
+  void copy_from_device(CUDAMatrix &matrix) const{
+    cudaMemcpy(this->elements,
+               matrix.elements,
+               width * height * sizeof(double),
+               cudaMemcpyDeviceToDevice);
   }
 
   void free() const{

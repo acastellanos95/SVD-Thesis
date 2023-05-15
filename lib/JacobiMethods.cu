@@ -2,7 +2,6 @@
 // Created by andre on 2/03/23.
 //
 
-#include <cublas_v2.h>
 #include "JacobiMethods.cuh"
 
 namespace Thesis {
@@ -875,18 +874,25 @@ void cuda_dgesvd(SVD_OPTIONS jobu,
   std::cout << "Finalized jacobi sweep!!\n";
 
   // Compute \Sigma
+  cudaDeviceSynchronize();
+  Matrix s_copy(1, std::min(m, n));
   for (size_t k = 0; k < std::min(m, n); ++k) {
-    cublasDnrm2(handle, m,reinterpret_cast<const double *>(A.elements + m * k), 1, s.elements + k);
+    double result;
+    cublasDnrm2(handle, m,reinterpret_cast<const double *>(A.elements + m * k), 1, &result);
+    s_copy.elements[k] = result;
   }
+  s.copy_from_host(s_copy);
   std::cout << "Finalized normalization!!\n";
 
   //Compute U
-//  for (size_t i = 0; i < m; ++i) {
-//    double scale;
-//    cudaMemcpy(&scale, s.elements + i, sizeof(double), cudaMemcpyDeviceToHost);
-//    scale = 1.0 / scale;
-//    cublasDscal(handle, m, reinterpret_cast<const double *>(&scale), U.elements + m * i, 1);
-//  }
+  cudaDeviceSynchronize();
+  U.copy_from_device(A);
+  for (size_t i = 0; i < m; ++i) {
+    double element = s_copy.elements[i];
+    double scale = 1.0 / element;
+    cublasDscal(handle, m, reinterpret_cast<const double *>(&scale), U.elements + m * i, 1);
+  }
+  std::cout << "Finalized U!!\n";
 
   // Destroy the handle
   cublasDestroy(handle);

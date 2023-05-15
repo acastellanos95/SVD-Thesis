@@ -8,6 +8,7 @@
 #include <iostream>
 #include <iomanip>
 #include <omp.h>
+#include <cublas_v2.h>
 #include "Matrix.cuh"
 #include "global.cuh"
 #include "Utils.cuh"

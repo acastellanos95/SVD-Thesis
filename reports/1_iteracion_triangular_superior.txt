@@ -1,0 +1,20 @@
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 1000, width: 1000
+SVD CUDA time with U,V calculation: 21.678
+max error between A and USV: 3.79696e-14
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 2000, width: 2000
+SVD CUDA time with U,V calculation: 76.8275
+max error between A and USV: 7.90479e-14
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 3000, width: 3000
+SVD CUDA time with U,V calculation: 178.557
+max error between A and USV: 1.46105e-13
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 4000, width: 4000
+SVD CUDA time with U,V calculation: 325.374
+max error between A and USV: 2.01505e-13
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 5000, width: 5000
+SVD CUDA time with U,V calculation: 560.83
+max error between A and USV: 2.54685e-13
