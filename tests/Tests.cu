@@ -835,32 +835,6 @@ void compare_cuda_operations(){
     CUDAMatrix d_A( A), d_s(s), d_U(U), d_V(V);
     std::cout << "Initialized!!\n";
 
-#ifdef REPORT
-    // Report Matrix A
-  file_output << std::fixed << std::setprecision(3) << "A: \n";
-  std::cout << std::fixed << std::setprecision(3) << "A: \n";
-  for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
-    for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
-      file_output << A.elements[Thesis::IteratorC(indexRow, indexCol, A_height)] << " ";
-      std::cout << A.elements[Thesis::IteratorC(indexRow, indexCol, A_height)] << " ";
-    }
-    file_output << '\n';
-    std::cout << '\n';
-  }
-  // Report Matrix A^T * A
-//    std::cout << std::fixed << std::setprecision(3) << "A^T * A: \n";
-//    for (size_t indexRow = 0; indexRow < A.width; ++indexRow) {
-//      for (size_t indexCol = 0; indexCol < A.width; ++indexCol) {
-//        double value = 0.0;
-//        for(size_t k_dot = 0; k_dot < A.height; ++k_dot){
-//          value += A.elements[Thesis::IteratorC(k_dot, indexRow, A.height)] * A.elements[Thesis::IteratorC(k_dot, indexCol, A.height)];
-//        }
-//        std::cout << value << " ";
-//      }
-//      std::cout << '\n';
-//    }
-#endif
-
     // Calculate SVD decomposition
     double ti = omp_get_wtime();
     Thesis::cuda_dgesvd(Thesis::AllVec,

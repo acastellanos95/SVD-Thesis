@@ -1,617 +1,302 @@
-frecuencia limitada: 3.6 GHz
-CPU
-GPU
-/home/andre/Documents/GitHub/SVD-Thesis/build/SVD_Thesis
+NT: 16
+Number of threads: 1
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 1000, width: 1000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 28.2203
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 1000, width: 1000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 28.0437
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 1000, width: 1000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 27.3462
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 1000, width: 1000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 26.4166
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 1000, width: 1000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 26.3732
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 1000, width: 1000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 26.4743
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 1000, width: 1000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 26.4382
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 1000, width: 1000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 26.5162
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 1000, width: 1000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 26.4497
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 1000, width: 1000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 26.5532
-Tiempo promedio: 26.8832
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 1000, width: 1000
-Initialized!!
-m_ordering: 500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 21.5491
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 1000, width: 1000
-Initialized!!
-m_ordering: 500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 21.1036
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 1000, width: 1000
-Initialized!!
-m_ordering: 500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 21.0873
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 1000, width: 1000
-Initialized!!
-m_ordering: 500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 21.0721
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 1000, width: 1000
-Initialized!!
-m_ordering: 500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 21.0908
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 1000, width: 1000
-Initialized!!
-m_ordering: 500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 21.0304
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 1000, width: 1000
-Initialized!!
-m_ordering: 500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 21.1106
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 1000, width: 1000
-Initialized!!
-m_ordering: 500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 21.0703
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 1000, width: 1000
-Initialized!!
-m_ordering: 500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 21.0745
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 1000, width: 1000
-Initialized!!
-m_ordering: 500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 21.0477
-Tiempo promedio: 21.1236
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 2000, width: 2000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 211.77
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 2000, width: 2000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 212.566
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 2000, width: 2000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 212.811
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 2000, width: 2000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 211.053
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 2000, width: 2000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 212.109
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 2000, width: 2000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 212.414
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 2000, width: 2000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 212.673
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 2000, width: 2000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 212.942
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 2000, width: 2000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 212.15
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 2000, width: 2000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 212.864
-Tiempo promedio: 212.335
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 2000, width: 2000
-Initialized!!
-m_ordering: 1000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 84.6426
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 2000, width: 2000
-Initialized!!
-m_ordering: 1000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 84.3034
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 2000, width: 2000
-Initialized!!
-m_ordering: 1000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 84.2671
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 2000, width: 2000
-Initialized!!
-m_ordering: 1000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 84.1779
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 2000, width: 2000
-Initialized!!
-m_ordering: 1000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 84.2462
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 2000, width: 2000
-Initialized!!
-m_ordering: 1000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 84.2062
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 2000, width: 2000
-Initialized!!
-m_ordering: 1000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 84.2461
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 2000, width: 2000
-Initialized!!
-m_ordering: 1000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 84.3032
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 2000, width: 2000
-Initialized!!
-m_ordering: 1000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 84.4138
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 2000, width: 2000
-Initialized!!
-m_ordering: 1000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 84.3064
-Tiempo promedio: 84.3113
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 3000, width: 3000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 714.814
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 3000, width: 3000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 713.98
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 3000, width: 3000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 714.636
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 3000, width: 3000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 714.959
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 3000, width: 3000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 713.629
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 3000, width: 3000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 714.251
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 3000, width: 3000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 713.873
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 3000, width: 3000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 714.382
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 3000, width: 3000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 714.31
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 3000, width: 3000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 713.49
-Tiempo promedio: 714.232
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 3000, width: 3000
-Initialized!!
-m_ordering: 1500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 190.88
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 3000, width: 3000
-Initialized!!
-m_ordering: 1500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 190.32
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 3000, width: 3000
-Initialized!!
-m_ordering: 1500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 190.638
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 3000, width: 3000
-Initialized!!
-m_ordering: 1500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 190.493
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 3000, width: 3000
-Initialized!!
-m_ordering: 1500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 190.394
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 3000, width: 3000
-Initialized!!
-m_ordering: 1500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 190.473
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 3000, width: 3000
-Initialized!!
-m_ordering: 1500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 190.074
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 3000, width: 3000
-Initialized!!
-m_ordering: 1500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 190.164
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 3000, width: 3000
-Initialized!!
-m_ordering: 1500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 190.63
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 3000, width: 3000
-Initialized!!
-m_ordering: 1500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 190.452
-Tiempo promedio: 190.452
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 4000, width: 4000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 1697.44
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 4000, width: 4000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 1694.22
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 4000, width: 4000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 1694.48
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 4000, width: 4000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 1698.4
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 4000, width: 4000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 1696.63
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 4000, width: 4000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 1695.23
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 4000, width: 4000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 1699.43
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 4000, width: 4000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 1700.52
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 4000, width: 4000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 1697.61
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 4000, width: 4000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 1700.36
-Tiempo promedio: 1697.43
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 4000, width: 4000
-Initialized!!
-m_ordering: 2000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 339.999
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 4000, width: 4000
-Initialized!!
-m_ordering: 2000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 338.963
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 4000, width: 4000
-Initialized!!
-m_ordering: 2000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 339.215
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 4000, width: 4000
-Initialized!!
-m_ordering: 2000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 339.646
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 4000, width: 4000
-Initialized!!
-m_ordering: 2000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 339.212
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 4000, width: 4000
-Initialized!!
-m_ordering: 2000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 339.017
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 4000, width: 4000
-Initialized!!
-m_ordering: 2000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 339.073
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 4000, width: 4000
-Initialized!!
-m_ordering: 2000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 339.831
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 4000, width: 4000
-Initialized!!
-m_ordering: 2000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 339.368
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 4000, width: 4000
-Initialized!!
-m_ordering: 2000
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 338.205
-Tiempo promedio: 339.253
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 5000, width: 5000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 3322.96
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 5000, width: 5000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 3322.41
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 5000, width: 5000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 3324.45
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 5000, width: 5000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 3321.14
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 5000, width: 5000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 3322.38
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 5000, width: 5000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 3324.32
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 5000, width: 5000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 3325.32
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 5000, width: 5000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 3325.46
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 5000, width: 5000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 3323.46
 -------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
 Dimensions, height: 5000, width: 5000
-How many repetitions?: 1
 SVD OMP time with U,V calculation: 3324.71
-Tiempo promedio: 3323.66
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 5000, width: 5000
-Initialized!!
-m_ordering: 2500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 536.113
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 5000, width: 5000
-Initialized!!
-m_ordering: 2500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 535.27
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 5000, width: 5000
-Initialized!!
-m_ordering: 2500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 535.559
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 5000, width: 5000
-Initialized!!
-m_ordering: 2500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 536.11
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 5000, width: 5000
-Initialized!!
-m_ordering: 2500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 534.627
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 5000, width: 5000
-Initialized!!
-m_ordering: 2500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 534.836
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 5000, width: 5000
-Initialized!!
-m_ordering: 2500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 534.796
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 5000, width: 5000
-Initialized!!
-m_ordering: 2500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 535.003
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 5000, width: 5000
-Initialized!!
-m_ordering: 2500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 536.035
 -------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 5000, width: 5000
-Initialized!!
-m_ordering: 2500
-Finalized jacobi sweep!!
-Finalized normalization!!
-Finalized U!!
 SVD CUDA time with U,V calculation: 537.195
-Tiempo promedio: 535.554
-
-Process finished with exit code 0
-

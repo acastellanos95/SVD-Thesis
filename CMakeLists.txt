@@ -6,11 +6,12 @@ set(CMAKE_CUDA_COMPILER_ID NVIDIA)
 set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
 set(CMAKE_CUDA_HOST_COMPILER /usr/bin/g++)
 set(CMAKE_CUDA_STANDARD 17)
+#set(MKL_DIR )
 #add_compile_options(-G)
 
 project(SVD_Thesis LANGUAGES CUDA CXX)
 
-#find_package(MKL CONFIG REQUIRED)
+find_package(LAPACK REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(CUDAToolkit REQUIRED)
 IF (OPENMP_FOUND)
@@ -28,6 +29,7 @@ add_executable(SVD_Thesis src/main.cu lib/HouseholderMethods.cuh lib/Householder
 
 #target_compile_options(SVD_Thesis PUBLIC $<TARGET_PROPERTY:MKL::MKL,INTERFACE_COMPILE_OPTIONS>)
 #target_include_directories(SVD_Thesis PUBLIC $<TARGET_PROPERTY:MKL::MKL,INTERFACE_INCLUDE_DIRECTORIES>)
+target_compile_options(SVD_Thesis PUBLIC ${LAPACK_LINKER_FLAGS})
 set_target_properties(SVD_Thesis PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON)
-target_link_libraries(SVD_Thesis cublas curand)
+target_link_libraries(SVD_Thesis cublas curand ${LAPACK_LIBRARIES})

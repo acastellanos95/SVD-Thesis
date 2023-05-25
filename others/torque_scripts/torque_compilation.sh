@@ -8,16 +8,18 @@
 
 #PBS -l walltime=0:15:00:nodes=1:ppn=12
 
-#PBS -o mypath/my.out
+#PBS -o /home/ameneses/my.out
 
-#PBS -e mypath/my.err
-
-#PBS -W stagein=file_list
-
-#PBS -W stageout=file_list
+#PBS -e /home/ameneses/my.err
 
 #PBS -m abe
 
 #PBS -r n
 
 source /opt/gpu/cudavars.sh 11.0
+
+cd SVD-Thesis
+cd build
+cmake ..
+make
+cd ../..
