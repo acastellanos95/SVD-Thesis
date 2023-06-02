@@ -22,7 +22,7 @@ int main() {
 //  Thesis::compare_cuda_operations();
 #endif
 
-  size_t begin = 5000;
+  size_t begin = 6000;
   size_t end = 10000;
   size_t delta = 1000;
   auto t = std::time(nullptr);
@@ -389,7 +389,8 @@ int main() {
 #ifdef CUDA
     {
       double time_avg = 0.0;
-      for(auto i_repeat = 0; i_repeat < 10; ++i_repeat){
+      auto times_repeat = 10;
+      for(auto i_repeat = 0; i_repeat < times_repeat; ++i_repeat){
         {
           // Build matrix A and R
           /* -------------------------------- Test 1 (Squared matrix SVD) CUDA -------------------------------- */
@@ -457,7 +458,7 @@ int main() {
           }
 
           CUDAMatrix d_A( A), d_s(s), d_U(U), d_V(V);
-          std::cout << "Initialized!!\n";
+//          std::cout << "Initialized!!\n";
 
 #ifdef REPORT
           // Report Matrix A
@@ -508,6 +509,7 @@ int main() {
           d_A.copy_to_host(A), d_s.copy_to_host(s), d_U.copy_to_host(U), d_V.copy_to_host(V);
 
 //          double maxError = 0.0;
+//          #pragma omp parallel for reduction(max:maxError)
 //          for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
 //            for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
 //              double value = 0.0;
@@ -576,7 +578,7 @@ int main() {
         }
       }
 
-      std::cout << "Tiempo promedio: " << (time_avg / 10.0) << "\n";
+      std::cout << "Tiempo promedio: " << (time_avg / round((double) times_repeat)) << "\n";
     }
 #endif
 

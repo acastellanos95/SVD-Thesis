@@ -739,7 +739,7 @@ void cuda_dgesvd(SVD_OPTIONS jobu,
 
   // Stopping condition in Hogben, L. (Ed.). (2013). Handbook of Linear Algebra (2nd ed.). Chapman and Hall/CRC. https://doi.org/10.1201/b16113
   size_t m_ordering = (n + 1) / 2;
-  std::cout << "m_ordering: " << m_ordering << "\n";
+//  std::cout << "m_ordering: " << m_ordering << "\n";
 
   // Ordering in  A. Sameh. On Jacobi and Jacobi-like algorithms for a parallel computer. Math. Comput., 25:579–590,
   // 1971
@@ -871,10 +871,10 @@ void cuda_dgesvd(SVD_OPTIONS jobu,
     }
   }
 
-  std::cout << "Finalized jacobi sweep!!\n";
+//  std::cout << "Finalized jacobi sweep!!\n";
 
   // Compute \Sigma
-  cudaDeviceSynchronize();
+//  cudaDeviceSynchronize();
   Matrix s_copy(1, std::min(m, n));
   for (size_t k = 0; k < std::min(m, n); ++k) {
     double result;
@@ -882,17 +882,17 @@ void cuda_dgesvd(SVD_OPTIONS jobu,
     s_copy.elements[k] = result;
   }
   s.copy_from_host(s_copy);
-  std::cout << "Finalized normalization!!\n";
+//  std::cout << "Finalized normalization!!\n";
 
   //Compute U
-  cudaDeviceSynchronize();
+//  cudaDeviceSynchronize();
   U.copy_from_device(A);
   for (size_t i = 0; i < m; ++i) {
     double element = s_copy.elements[i];
     double scale = 1.0 / element;
     cublasDscal(handle, m, reinterpret_cast<const double *>(&scale), U.elements + m * i, 1);
   }
-  std::cout << "Finalized U!!\n";
+//  std::cout << "Finalized U!!\n";
 
   // Destroy the handle
   cublasDestroy(handle);

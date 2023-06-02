@@ -1,0 +1,152 @@
+NT: 16
+Number of threads: 1
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 6000, width: 6000
+SVD CUDA time with U,V calculation: 849.546
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 6000, width: 6000
+SVD CUDA time with U,V calculation: 849.568
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 6000, width: 6000
+SVD CUDA time with U,V calculation: 853.635
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 6000, width: 6000
+SVD CUDA time with U,V calculation: 851.259
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 6000, width: 6000
+SVD CUDA time with U,V calculation: 852.875
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 6000, width: 6000
+SVD CUDA time with U,V calculation: 852.548
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 6000, width: 6000
+SVD CUDA time with U,V calculation: 853.51
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 6000, width: 6000
+SVD CUDA time with U,V calculation: 853.502
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 6000, width: 6000
+SVD CUDA time with U,V calculation: 852.602
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 6000, width: 6000
+SVD CUDA time with U,V calculation: 853.042
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 7000, width: 7000
+SVD CUDA time with U,V calculation: 1178.45
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 7000, width: 7000
+SVD CUDA time with U,V calculation: 1179
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 7000, width: 7000
+SVD CUDA time with U,V calculation: 1177.83
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 7000, width: 7000
+SVD CUDA time with U,V calculation: 1179.18
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 7000, width: 7000
+SVD CUDA time with U,V calculation: 1179.04
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 7000, width: 7000
+SVD CUDA time with U,V calculation: 1178.76
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 7000, width: 7000
+SVD CUDA time with U,V calculation: 1177.64
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 7000, width: 7000
+SVD CUDA time with U,V calculation: 1177.57
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 7000, width: 7000
+SVD CUDA time with U,V calculation: 1174.22
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 7000, width: 7000
+SVD CUDA time with U,V calculation: 1174.67
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 8000, width: 8000
+SVD CUDA time with U,V calculation: 1581.63
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 8000, width: 8000
+SVD CUDA time with U,V calculation: 1691.51
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 8000, width: 8000
+SVD CUDA time with U,V calculation: 1569.73
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 8000, width: 8000
+SVD CUDA time with U,V calculation: 1667.15
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 8000, width: 8000
+SVD CUDA time with U,V calculation: 1565.6
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 8000, width: 8000
+SVD CUDA time with U,V calculation: 1652.93
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 8000, width: 8000
+SVD CUDA time with U,V calculation: 1542.46
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 8000, width: 8000
+SVD CUDA time with U,V calculation: 1634.99
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 8000, width: 8000
+SVD CUDA time with U,V calculation: 1555.85
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 8000, width: 8000
+SVD CUDA time with U,V calculation: 1629.25
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 9000, width: 9000
+SVD CUDA time with U,V calculation: 2564.42
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 9000, width: 9000
+SVD CUDA time with U,V calculation: 2563.93
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 9000, width: 9000
+SVD CUDA time with U,V calculation: 2564.98
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 9000, width: 9000
+SVD CUDA time with U,V calculation: 2563.48
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 9000, width: 9000
+SVD CUDA time with U,V calculation: 2560.5
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 9000, width: 9000
+SVD CUDA time with U,V calculation: 2560.42
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 9000, width: 9000
+SVD CUDA time with U,V calculation: 2557.62
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 9000, width: 9000
+SVD CUDA time with U,V calculation: 2559.98
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 9000, width: 9000
+SVD CUDA time with U,V calculation: 2557.73
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 9000, width: 9000
+SVD CUDA time with U,V calculation: 2561.74
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 10000, width: 10000
+SVD CUDA time with U,V calculation: 3185.36
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 10000, width: 10000
+SVD CUDA time with U,V calculation: 3189.91
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 10000, width: 10000
+SVD CUDA time with U,V calculation: 3187.48
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 10000, width: 10000
+SVD CUDA time with U,V calculation: 3185.86
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 10000, width: 10000
+SVD CUDA time with U,V calculation: 3183.55
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 10000, width: 10000
+SVD CUDA time with U,V calculation: 3186.32
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 10000, width: 10000
+SVD CUDA time with U,V calculation: 3178.42
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 10000, width: 10000
+SVD CUDA time with U,V calculation: 3188.86
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 10000, width: 10000
+SVD CUDA time with U,V calculation: 3184.89
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
+Dimensions, height: 10000, width: 10000
+SVD CUDA time with U,V calculation: 3186.81
