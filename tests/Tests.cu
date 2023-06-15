@@ -5,6 +5,7 @@
 #include "Tests.cuh"
 
 namespace Thesis{
+/*
 void max_iterations_error(){
   // SEED!!!
   const unsigned seed = 1000000;
@@ -929,5 +930,6 @@ void compare_cuda_operations(){
     d_A.free(), d_s.free(), d_U.free(), d_V.free();
   }
 }
+*/
 
 }

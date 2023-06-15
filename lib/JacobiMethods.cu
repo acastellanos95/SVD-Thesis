@@ -186,6 +186,7 @@ namespace Thesis {
                 did not converge to zero. See the description of WORK
                 above for details.
 *********************************************************************************/
+/*
 void sequential_dgesvd(SVD_OPTIONS jobu,
                        SVD_OPTIONS jobv,
                        size_t m,
@@ -415,6 +416,7 @@ void sequential_dgesvd(SVD_OPTIONS jobu,
     }
   }
 }
+*/
 
 void omp_dgesvd(SVD_OPTIONS jobu,
                 SVD_OPTIONS jobv,
@@ -434,70 +436,15 @@ void omp_dgesvd(SVD_OPTIONS jobu,
   // Initializing V = 1
   if (jobv == AllVec) {
     for (size_t i = 0; i < n; ++i) {
-      V.elements[iterator(i, i, ldv)] = 1.0;
+      V.elements[iteratorC(i, i, ldv)] = 1.0;
     }
   } else if (jobv == SomeVec) {
     for (size_t i = 0; i < std::min(m, n); ++i) {
-      V.elements[iterator(i, i, ldv)] = 1.0;
+      V.elements[iteratorC(i, i, ldv)] = 1.0;
     }
   }
 
-  // Create scheduler
   size_t m_ordering = (n + 1) / 2;
-//  size_t number_of_parallel_ordering = n;
-//  size_t number_of_points_in_ordering = n/2;
-//  auto ordering_array = new std::tuple<size_t, size_t>[number_of_parallel_ordering * (number_of_points_in_ordering)];
-//
-//  for (size_t k = 1; k < m_ordering; ++k) {
-//    size_t p = 0;
-//    size_t p_trans = 0;
-//    size_t q_trans = 0;
-//    size_t indexPoint = 0;
-//    #pragma omp parallel for private(p, p_trans, q_trans)
-//    for (size_t q = m_ordering - k + 1; q <= n - k; ++q) {
-//      if (m_ordering - k + 1 <= q && q <= (2 * m_ordering) - (2 * k)) {
-//        p = ((2 * m_ordering) - (2 * k) + 1) - q;
-//      } else if ((2 * m_ordering) - (2 * k) < q && q <= (2 * m_ordering) - k - 1) {
-//        p = ((4 * m_ordering) - (2 * k)) - q;
-//      } else if ((2 * m_ordering) - k - 1 < q) {
-//        p = n;
-//      }
-//
-//      // Translate to (0,0)
-//      p_trans = p - 1;
-//      q_trans = q - 1;
-//
-//
-//      std::tuple<size_t, size_t> point = std::make_tuple(p_trans, q_trans);
-//      #pragma omp critical
-//      ordering_array[(k-1)*number_of_parallel_ordering + indexPoint++] = point;
-//    }
-//  }
-//
-//  for (size_t k = m_ordering; k < 2 * m_ordering; ++k) {
-//    size_t p = 0;
-//    size_t p_trans = 0;
-//    size_t q_trans = 0;
-//    size_t indexPoint = 0;
-//    #pragma omp parallel for private(p, p_trans, q_trans)
-//    for (size_t q = (4 * m_ordering) - n - k; q < (3 * m_ordering) - k; ++q) {
-//      if (q < (2 * m_ordering) - k + 1) {
-//        p = n;
-//      } else if ((2 * m_ordering) - k + 1 <= q && q <= (4 * m_ordering) - (2 * k) - 1) {
-//        p = ((4 * m_ordering) - (2 * k)) - q;
-//      } else if ((4 * m_ordering) - (2 * k) - 1 < q) {
-//        p = ((6 * m_ordering) - (2 * k) - 1) - q;
-//      }
-//
-//      // Translate to (0,0)
-//      p_trans = p - 1;
-//      q_trans = q - 1;
-//
-//      std::tuple<size_t, size_t> point = std::make_tuple(p_trans, q_trans);
-//      #pragma omp critical
-//      ordering_array[(k-1)*number_of_parallel_ordering + indexPoint++] = point;
-//    }
-//  }
 
 #ifdef DEBUG
   // Report Matrix A^T * A
@@ -545,8 +492,8 @@ void omp_dgesvd(SVD_OPTIONS jobu,
         // \alpha = a_p^T\cdot a_q, \beta = a_p^T\cdot a_p, \gamma = a_q^T\cdot a_q
         double tmp_p, tmp_q;
         for (size_t i = 0; i < m; ++i) {
-          tmp_p = A.elements[iterator(i, p_trans, lda)];
-          tmp_q = A.elements[iterator(i, q_trans, lda)];
+          tmp_p = A.elements[iteratorC(i, p_trans, lda)];
+          tmp_q = A.elements[iteratorC(i, q_trans, lda)];
           alpha += tmp_p * tmp_q;
           beta += tmp_p * tmp_p;
           gamma += tmp_q * tmp_q;
@@ -555,32 +502,54 @@ void omp_dgesvd(SVD_OPTIONS jobu,
         // abs(a_p^T\cdot a_q) / sqrt((a_p^T\cdot a_p)(a_q^T\cdot a_q))
         double convergence_value = abs(alpha) / sqrt(beta * gamma);
 
-//        if (convergence_value > tolerance) {
+        if (convergence_value > tolerance) {
 
           // Schur
-          auto [c_schur, s_schur] = non_sym_Schur_non_ordered(iterator, m, n, A, lda, p_trans, q_trans, alpha);
+          double c_schur = 1.0, s_schur = 0.0, aqq = 0.0, app = 0.0, apq = alpha;
 
-          double tmp_A_p, tmp_A_q;
+          // Calculate a_{pp}, a_{qq}, a_{pq}
           for (size_t i = 0; i < m; ++i) {
-            tmp_A_p = A.elements[iterator(i, p_trans, lda)];
-            tmp_A_q = A.elements[iterator(i, q_trans, lda)];
-            tmp_p = c_schur * tmp_A_p - s_schur * tmp_A_q;
-            tmp_q = s_schur * tmp_A_p + c_schur * tmp_A_q;
-            A.elements[iterator(i, p_trans, lda)] = tmp_p;
-            A.elements[iterator(i, q_trans, lda)] = tmp_q;
+            double value_p = A.elements[iteratorC(i, p_trans, lda)];
+            double value_q = A.elements[iteratorC(i, q_trans, lda)];
+            app += value_p * value_p;
+            aqq += value_q * value_q;
           }
 
-          if (jobv == AllVec || jobv == SomeVec) {
-            for (size_t i = 0; i < n; ++i) {
-              tmp_p = c_schur * V.elements[iterator(i, p_trans, ldv)] - s_schur * V.elements[iterator(i, q_trans, ldv)];
-              tmp_q = s_schur * V.elements[iterator(i, p_trans, ldv)] + c_schur * V.elements[iterator(i, q_trans, ldv)];
-              V.elements[iterator(i, p_trans, ldv)] = tmp_p;
-              V.elements[iterator(i, q_trans, ldv)] = tmp_q;
+          if (abs(apq) > tolerance) {
+            double tau = (aqq - app) / (2.0 * apq);
+            double t = 0.0;
+
+            if (tau >= 0) {
+              t = 1.0 / (tau + sqrt(1 + (tau * tau)));
+            } else {
+              t = 1.0 / (tau - sqrt(1 + (tau * tau)));
+            }
+
+            c_schur = 1.0 / sqrt(1 + (t * t));
+            s_schur = t * c_schur;
+
+            double tmp_A_p, tmp_A_q;
+            for (size_t i = 0; i < m; ++i) {
+              tmp_A_p = A.elements[iteratorC(i, p_trans, lda)];
+              tmp_A_q = A.elements[iteratorC(i, q_trans, lda)];
+              tmp_p = c_schur * tmp_A_p - s_schur * tmp_A_q;
+              tmp_q = s_schur * tmp_A_p + c_schur * tmp_A_q;
+              A.elements[iteratorC(i, p_trans, lda)] = tmp_p;
+              A.elements[iteratorC(i, q_trans, lda)] = tmp_q;
+            }
+
+            if (jobv == AllVec || jobv == SomeVec) {
+              for (size_t i = 0; i < n; ++i) {
+                tmp_p =
+                    c_schur * V.elements[iteratorC(i, p_trans, ldv)] - s_schur * V.elements[iteratorC(i, q_trans, ldv)];
+                tmp_q =
+                    s_schur * V.elements[iteratorC(i, p_trans, ldv)] + c_schur * V.elements[iteratorC(i, q_trans, ldv)];
+                V.elements[iteratorC(i, p_trans, ldv)] = tmp_p;
+                V.elements[iteratorC(i, q_trans, ldv)] = tmp_q;
+              }
             }
           }
-//        } else {
-//          ++istop;
-//        }
+        }
 
 #ifdef DEBUG
         // Report Matrix A^T * A
@@ -603,7 +572,7 @@ void omp_dgesvd(SVD_OPTIONS jobu,
       size_t p = 0;
       size_t p_trans = 0;
       size_t q_trans = 0;
-      #pragma omp parallel for private(p, p_trans, q_trans)
+#pragma omp parallel for private(p, p_trans, q_trans)
       for (size_t q = (4 * m_ordering) - n - k; q < (3 * m_ordering) - k; ++q) {
         if (q < (2 * m_ordering) - k + 1) {
           p = n;
@@ -621,41 +590,64 @@ void omp_dgesvd(SVD_OPTIONS jobu,
         // \alpha = a_p^T\cdot a_q, \beta = a_p^T\cdot a_p, \gamma = a_q^T\cdot a_q
         double tmp_p, tmp_q;
         for (size_t i = 0; i < m; ++i) {
-          tmp_p = A.elements[iterator(i, p_trans, lda)];
-          tmp_q = A.elements[iterator(i, q_trans, lda)];
+          tmp_p = A.elements[iteratorC(i, p_trans, lda)];
+          tmp_q = A.elements[iteratorC(i, q_trans, lda)];
           alpha += tmp_p * tmp_q;
           beta += tmp_p * tmp_p;
           gamma += tmp_q * tmp_q;
         }
 
-        // (a_p^T\cdot a_q)^2 / (a_p^T\cdot a_p)(a_q^T\cdot a_q)
+        // abs(a_p^T\cdot a_q) / sqrt((a_p^T\cdot a_p)(a_q^T\cdot a_q))
         double convergence_value = abs(alpha) / sqrt(beta * gamma);
 
-//        if (convergence_value > tolerance) {
-          // (a_p^T\cdot a_q)^2 / (a_p^T\cdot a_p)(a_q^T\cdot a_q) > tolerance
-          // Schur
-          auto [c_schur, s_schur] = non_sym_Schur_non_ordered(iterator, m, n, A, lda, p_trans, q_trans, alpha);
+        if (convergence_value > tolerance) {
 
-          double A_tmp_p, A_tmp_q;
+          // Schur
+          double c_schur = 1.0, s_schur = 0.0, aqq = 0.0, app = 0.0, apq = alpha;
+
+          // Calculate a_{pp}, a_{qq}, a_{pq}
           for (size_t i = 0; i < m; ++i) {
-            A_tmp_p = A.elements[iterator(i, p_trans, lda)];
-            A_tmp_q = A.elements[iterator(i, q_trans, lda)];
-            tmp_p = c_schur * A_tmp_p - s_schur * A_tmp_q;
-            tmp_q = s_schur * A_tmp_p + c_schur * A_tmp_q;
-            A.elements[iterator(i, p_trans, lda)] = tmp_p;
-            A.elements[iterator(i, q_trans, lda)] = tmp_q;
+            double value_p = A.elements[iteratorC(i, p_trans, lda)];
+            double value_q = A.elements[iteratorC(i, q_trans, lda)];
+            app += value_p * value_p;
+            aqq += value_q * value_q;
           }
-          if (jobv == AllVec || jobv == SomeVec) {
-            for (size_t i = 0; i < n; ++i) {
-              tmp_p = c_schur * V.elements[iterator(i, p_trans, ldv)] - s_schur * V.elements[iterator(i, q_trans, ldv)];
-              tmp_q = s_schur * V.elements[iterator(i, p_trans, ldv)] + c_schur * V.elements[iterator(i, q_trans, ldv)];
-              V.elements[iterator(i, p_trans, ldv)] = tmp_p;
-              V.elements[iterator(i, q_trans, ldv)] = tmp_q;
+
+          if (abs(apq) > tolerance) {
+            double tau = (aqq - app) / (2.0 * apq);
+            double t = 0.0;
+
+            if (tau >= 0) {
+              t = 1.0 / (tau + sqrt(1 + (tau * tau)));
+            } else {
+              t = 1.0 / (tau - sqrt(1 + (tau * tau)));
+            }
+
+            c_schur = 1.0 / sqrt(1 + (t * t));
+            s_schur = t * c_schur;
+
+            double tmp_A_p, tmp_A_q;
+            for (size_t i = 0; i < m; ++i) {
+              tmp_A_p = A.elements[iteratorC(i, p_trans, lda)];
+              tmp_A_q = A.elements[iteratorC(i, q_trans, lda)];
+              tmp_p = c_schur * tmp_A_p - s_schur * tmp_A_q;
+              tmp_q = s_schur * tmp_A_p + c_schur * tmp_A_q;
+              A.elements[iteratorC(i, p_trans, lda)] = tmp_p;
+              A.elements[iteratorC(i, q_trans, lda)] = tmp_q;
+            }
+
+            if (jobv == AllVec || jobv == SomeVec) {
+              for (size_t i = 0; i < n; ++i) {
+                tmp_p =
+                    c_schur * V.elements[iteratorC(i, p_trans, ldv)] - s_schur * V.elements[iteratorC(i, q_trans, ldv)];
+                tmp_q =
+                    s_schur * V.elements[iteratorC(i, p_trans, ldv)] + c_schur * V.elements[iteratorC(i, q_trans, ldv)];
+                V.elements[iteratorC(i, p_trans, ldv)] = tmp_p;
+                V.elements[iteratorC(i, q_trans, ldv)] = tmp_q;
+              }
             }
           }
-//        } else {
-//          ++istop;
-//        }
+        }
 
 #ifdef DEBUG
         // Report Matrix A^T * A
@@ -693,27 +685,27 @@ void omp_dgesvd(SVD_OPTIONS jobu,
   std::cout << "How many repetitions?: " << reps << "\n";
 
   // Compute \Sigma
-  #pragma omp parallel for
+#pragma omp parallel for
   for (size_t k = 0; k < std::min(m, n); ++k) {
     for (size_t i = 0; i < m; ++i) {
-      s.elements[k] += A.elements[iterator(i, k, lda)] * A.elements[iterator(i, k, lda)];
+      s.elements[k] += A.elements[iteratorC(i, k, lda)] * A.elements[iteratorC(i, k, lda)];
     }
     s.elements[k] = sqrt(s.elements[k]);
   }
 
   //Compute U
   if (jobu == AllVec) {
-    #pragma omp parallel for
+#pragma omp parallel for
     for (size_t i = 0; i < m; ++i) {
       for (size_t j = 0; j < m; ++j) {
-        U.elements[iterator(j, i, ldu)] = A.elements[iterator(j, i, ldu)] / s.elements[i];
+        U.elements[iteratorC(j, i, ldu)] = A.elements[iteratorC(j, i, ldu)] / s.elements[i];
       }
     }
   } else if (jobu == SomeVec) {
-    #pragma omp parallel for
+#pragma omp parallel for
     for (size_t k = 0; k < std::min(m, n); ++k) {
       for (size_t i = 0; i < m; ++i) {
-        U.elements[iterator(i, k, ldu)] = A.elements[iterator(i, k, ldu)] / s.elements[k];
+        U.elements[iteratorC(i, k, ldu)] = A.elements[iteratorC(i, k, ldu)] / s.elements[k];
       }
     }
   }
@@ -731,7 +723,7 @@ void cuda_dgesvd(SVD_OPTIONS jobu,
                  CUDAMatrix &U,
                  size_t ldu,
                  CUDAMatrix &V,
-                 size_t ldv){
+                 size_t ldv) {
 
   // Create a handle for CUBLAS
   cublasHandle_t handle;
@@ -762,29 +754,29 @@ void cuda_dgesvd(SVD_OPTIONS jobu,
 
       double alpha = 0.0, beta = 0.0, gamma = 0.0;
       // \alpha = a_p^T\cdot a_q, \beta = a_p^T\cdot a_p, \gamma = a_q^T\cdot a_q
-      cublasDdot (handle, m,
-              reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
-              reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
-          &alpha);
-      cublasDdot (handle, m,
-              reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
-              reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
-              &beta);
-      cublasDdot (handle, m,
-              reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
-              reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
-              &gamma);
+      cublasDdot(handle, m,
+                 reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
+                 reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
+                 &alpha);
+      cublasDdot(handle, m,
+                 reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
+                 reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
+                 &beta);
+      cublasDdot(handle, m,
+                 reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
+                 reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
+                 &gamma);
 
       // abs(a_p^T\cdot a_q) / sqrt((a_p^T\cdot a_p)(a_q^T\cdot a_q))
       double convergence_value = abs(alpha) / sqrt(beta * gamma);
 
       if (convergence_value > tolerance) {
         // Schur
-        if(abs(alpha) > tolerance){
+        if (abs(alpha) > tolerance) {
           double tau = (gamma - beta) / (2.0 * alpha);
           double t = 0.0;
 
-          if(tau >= 0){
+          if (tau >= 0) {
             t = 1.0 / (tau + sqrt(1 + (tau * tau)));
           } else {
             t = 1.0 / (tau - sqrt(1 + (tau * tau)));
@@ -794,9 +786,9 @@ void cuda_dgesvd(SVD_OPTIONS jobu,
           const double s_schur = t * c_schur;
 
           cublasDrot(handle, m,
-                 A.elements + m * q_trans, 1,
-                 A.elements + m * p_trans, 1,
-                 &c_schur, &s_schur);
+                     A.elements + m * q_trans, 1,
+                     A.elements + m * p_trans, 1,
+                     &c_schur, &s_schur);
 
           cublasDrot(handle, m,
                      V.elements + m * q_trans, 1,
@@ -826,29 +818,29 @@ void cuda_dgesvd(SVD_OPTIONS jobu,
 
       double alpha = 0.0, beta = 0.0, gamma = 0.0;
       // \alpha = a_p^T\cdot a_q, \beta = a_p^T\cdot a_p, \gamma = a_q^T\cdot a_q
-      cublasDdot (handle, m,
-                  reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
-                  reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
-                  &alpha);
-      cublasDdot (handle, m,
-                  reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
-                  reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
-                  &beta);
-      cublasDdot (handle, m,
-                  reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
-                  reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
-                  &gamma);
+      cublasDdot(handle, m,
+                 reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
+                 reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
+                 &alpha);
+      cublasDdot(handle, m,
+                 reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
+                 reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
+                 &beta);
+      cublasDdot(handle, m,
+                 reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
+                 reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
+                 &gamma);
 
       // abs(a_p^T\cdot a_q) / sqrt((a_p^T\cdot a_p)(a_q^T\cdot a_q))
       double convergence_value = abs(alpha) / sqrt(beta * gamma);
 
       if (convergence_value > tolerance) {
         // Schur
-        if(abs(alpha) > tolerance){
+        if (abs(alpha) > tolerance) {
           double tau = (gamma - beta) / (2.0 * alpha);
           double t = 0.0;
 
-          if(tau >= 0){
+          if (tau >= 0) {
             t = 1.0 / (tau + sqrt(1 + (tau * tau)));
           } else {
             t = 1.0 / (tau - sqrt(1 + (tau * tau)));
@@ -878,7 +870,7 @@ void cuda_dgesvd(SVD_OPTIONS jobu,
   Matrix s_copy(1, std::min(m, n));
   for (size_t k = 0; k < std::min(m, n); ++k) {
     double result;
-    cublasDnrm2(handle, m,reinterpret_cast<const double *>(A.elements + m * k), 1, &result);
+    cublasDnrm2(handle, m, reinterpret_cast<const double *>(A.elements + m * k), 1, &result);
     s_copy.elements[k] = result;
   }
   s.copy_from_host(s_copy);

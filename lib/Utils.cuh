@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <functional>
 #include <iostream>
+#include <omp.h>
 
 namespace Thesis {
 
@@ -42,6 +43,8 @@ size_t IteratorC(size_t i, size_t j, size_t ld);
 size_t IteratorR(size_t i, size_t j, size_t ld);
 
 std::function<size_t(size_t, size_t, size_t)> get_iterator(MATRIX_LAYOUT matrix_layout);
+
+int omp_thread_count();
 
 } // Thesis
 

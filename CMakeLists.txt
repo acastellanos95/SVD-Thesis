@@ -15,7 +15,7 @@ find_package(LAPACK REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(CUDAToolkit REQUIRED)
 IF (OPENMP_FOUND)
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS} --std=c++17")
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS} --std=c++11 -O3")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_CXX_FLAGS}")
 ENDIF()
 
@@ -29,7 +29,7 @@ add_executable(SVD_Thesis src/main.cu lib/HouseholderMethods.cuh lib/Householder
 
 #target_compile_options(SVD_Thesis PUBLIC $<TARGET_PROPERTY:MKL::MKL,INTERFACE_COMPILE_OPTIONS>)
 #target_include_directories(SVD_Thesis PUBLIC $<TARGET_PROPERTY:MKL::MKL,INTERFACE_INCLUDE_DIRECTORIES>)
-target_compile_options(SVD_Thesis PUBLIC ${LAPACK_LINKER_FLAGS})
+target_compile_options(SVD_Thesis PUBLIC)
 set_target_properties(SVD_Thesis PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON)
 target_link_libraries(SVD_Thesis cublas curand ${LAPACK_LIBRARIES})

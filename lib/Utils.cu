@@ -138,8 +138,8 @@ std::tuple<double, double> non_sym_Schur_non_ordered(const std::function<size_t(
 
   // Calculate a_{pp}, a_{qq}, a_{pq}
   for(size_t i = 0; i < m; ++i){
-    double value_p = A.elements[iterator(i, p, lda)];
-    double value_q = A.elements[iterator(i, q, lda)];
+    double value_p = A.elements[iteratorC(i, p, lda)];
+    double value_q = A.elements[iteratorC(i, q, lda)];
     app += value_p * value_p;
     aqq += value_q * value_q;
   }
@@ -176,6 +176,13 @@ std::function<size_t(size_t, size_t, size_t)> get_iterator(MATRIX_LAYOUT matrix_
     return IteratorR;
   else
     return IteratorC;
+}
+
+int omp_thread_count() {
+  int n = 0;
+#pragma omp parallel reduction(+:n)
+  n += 1;
+  return n;
 }
 
 } // Thesis

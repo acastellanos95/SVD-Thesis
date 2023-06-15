@@ -4,8 +4,7 @@
 #include <cmath>
 #include <unordered_map>
 #include <sstream>
-#include <thrust/host_vector.h>
-#include <thrust/device_vector.h>
+#include "../lib/Utils.cuh"
 #include "../lib/HouseholderMethods.cuh"
 #include "../lib/JacobiMethods.cuh"
 #include "../lib/global.cuh"
@@ -22,8 +21,8 @@ int main() {
 //  Thesis::compare_cuda_operations();
 #endif
 
-  size_t begin = 6000;
-  size_t end = 10000;
+  size_t begin = 1000;
+  size_t end = 1000;
   size_t delta = 1000;
   auto t = std::time(nullptr);
   auto tm = *std::localtime(&t);
@@ -34,7 +33,31 @@ int main() {
 
   std::stringstream file_output;
   file_output << "NT: " << NT << '\n';
-  file_output << "Number of threads: " << omp_get_num_threads() << '\n';
+  file_output << "Number of threads: " << Thesis::omp_thread_count() << '\n';
+  std::cout << "Number of threads: " << Thesis::omp_thread_count() << '\n';
+
+//  #pragma omp parallel for
+//  for(int i = 0; i < 100; ++i){
+//    #pragma omp critical
+//    std::cout << "thread: " << omp_get_thread_num() << ", i: " << i << "\n";
+//  }
+//  Matrix A(1, 131072);
+//  std::fill_n(A.elements, 131072, 1.0);
+//  double ti_upload = omp_get_wtime();
+//  CUDAMatrix d_A(A);
+//  double tf_upload = omp_get_wtime();
+//  double ti_download = omp_get_wtime();
+//  d_A.copy_to_host(A);
+//  double tf_download = omp_get_wtime();
+//  d_A.free();
+//  double time_upload = tf_upload - ti_upload;
+//  double time_download = tf_download - ti_download;
+//
+//  file_output << "1 GB upload time: " << time_upload << "\n";
+//  std::cout << "1 GB upload time: " << time_upload << "\n";
+//  file_output << "1 GB download time: " << time_download << "\n";
+//  std::cout << "1 GB download time: " << time_download << "\n";
+
   for (; begin <= end; begin += delta) {
 #ifdef SEQUENTIAL
     {
@@ -216,7 +239,8 @@ int main() {
 #ifdef OMP
     {
       double time_avg = 0.0;
-      for(auto i_repeat = 0; i_repeat < 10; ++i_repeat){
+      auto times_repeat = 10;
+      for(auto i_repeat = 0; i_repeat < times_repeat; ++i_repeat){
         {
           // Build matrix A and R
           /* -------------------------------- Test 1 (Squared matrix SVD) OMP -------------------------------- */
@@ -254,18 +278,19 @@ int main() {
           auto iterator = Thesis::IteratorC;
 
           // Create a random bidiagonal matrix
+          std::random_device random_device;
           std::default_random_engine e(seed);
           std::uniform_real_distribution<double> uniform_dist(0.0, 1.0);
           for (size_t indexRow = 0; indexRow < std::min<size_t>(A_height, A_width); ++indexRow) {
             double value = uniform_dist(e);
-            A.elements[iterator(indexRow, indexRow, A_height)] = value;
-            A_copy.elements[iterator(indexRow, indexRow, A_height)] = value;
+            A.elements[iteratorC(indexRow, indexRow, A_height)] = value;
+            A_copy.elements[iteratorC(indexRow, indexRow, A_height)] = value;
           }
 
           for (size_t indexRow = 0; indexRow < (std::min<size_t>(A_height, A_width) - 1); ++indexRow) {
             double value = uniform_dist(e);
-            A.elements[iterator(indexRow, indexRow + 1, A_height)] = value;
-            A_copy.elements[iterator(indexRow, indexRow + 1, A_height)] = value;
+            A.elements[iteratorC(indexRow, indexRow + 1, A_height)] = value;
+            A_copy.elements[iteratorC(indexRow, indexRow + 1, A_height)] = value;
           }
 
 #ifdef REPORT
@@ -315,21 +340,33 @@ int main() {
           file_output << "SVD OMP time with U,V calculation: " << time << "\n";
           std::cout << "SVD OMP time with U,V calculation: " << time << "\n";
 
-//          double maxError = 0.0;
-//          for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
-//            for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
-//              double value = 0.0;
-//              for (size_t k_dot = 0; k_dot < A_width; ++k_dot) {
-//                value += U.elements[iterator(indexRow, k_dot, A_height)] * s.elements[k_dot]
-//                    * V.elements[iterator(indexCol, k_dot, A_height)];
-//              }
-//              double diff = std::abs(A_copy.elements[iterator(indexRow, indexCol, A_height)] - value);
-//              maxError = std::max<double>(maxError, diff);
-//            }
-//          }
-//
-//          file_output << "max error between A and USV: " << maxError << "\n";
-//          std::cout << "max error between A and USV: " << maxError << "\n";
+          #pragma omp parallel for
+          for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
+            for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
+              double value = 0.0;
+              for (size_t k_dot = 0; k_dot < A_width; ++k_dot) {
+                value += U.elements[iteratorC(indexRow, k_dot, A_height)] * s.elements[k_dot]
+                    * V.elements[iteratorC(indexCol, k_dot, A_height)];
+              }
+              A_copy.elements[iteratorC(indexRow, indexCol, A_height)] -= value;
+            }
+          }
+
+          // Calculate frobenius norm
+          cublasHandle_t handle;
+          cublasCreate(&handle);
+          double frobenius_norm = 0.0;
+          CUDAMatrix d_Delta(A_copy);
+          auto status = cublasDnrm2(handle, height * width,reinterpret_cast<const double *>(d_Delta.elements), 1, &frobenius_norm);
+          if(status == CUBLAS_STATUS_SUCCESS){
+            file_output << "||A-USVt||_F: " << frobenius_norm << "\n";
+            std::cout << "||A-USVt||_F: " << frobenius_norm << "\n";
+          } else {
+            file_output << "Something went wrong on frobenius norm calculus\n";
+            std::cout << "Something went wrong on frobenius norm calculus\n";
+          }
+          cublasDestroy(handle);
+          d_Delta.free();
 
 #ifdef REPORT
           // Report Matrix A=USV
@@ -382,7 +419,7 @@ int main() {
         }
       }
 
-      std::cout << "Tiempo promedio: " << (time_avg / 10.0) << "\n";
+      std::cout << "Tiempo promedio: " << (time_avg / round((double) times_repeat)) << "\n";
     }
 #endif
 
@@ -444,17 +481,18 @@ int main() {
 
           // Create R matrix
           std::default_random_engine e(seed);
+          std::random_device random_device;
           std::uniform_real_distribution<double> uniform_dist(0.0, 1.0);
           for (size_t indexRow = 0; indexRow < std::min<size_t>(A_height, A_width); ++indexRow) {
             for (size_t indexCol = indexRow; indexCol < std::min<size_t>(A_height, A_width); ++indexCol) {
-              double value = uniform_dist(e);
-              A.elements[iterator(indexRow, indexCol, A_height)] = value;
-              A_copy.elements[iterator(indexRow, indexCol, A_height)] = value;
+              double value = uniform_dist(random_device);
+              A.elements[iteratorC(indexRow, indexCol, A_height)] = value;
+              A_copy.elements[iteratorC(indexRow, indexCol, A_height)] = value;
             }
           }
 
           for (size_t i = 0; i < A.width; ++i) {
-            V.elements[iterator(i, i, A_width)] = 1.0;
+            V.elements[iteratorC(i, i, A_width)] = 1.0;
           }
 
           CUDAMatrix d_A( A), d_s(s), d_U(U), d_V(V);
@@ -507,23 +545,35 @@ int main() {
           std::cout << "SVD CUDA time with U,V calculation: " << time << "\n";
 
           d_A.copy_to_host(A), d_s.copy_to_host(s), d_U.copy_to_host(U), d_V.copy_to_host(V);
+          d_A.free(), d_s.free(), d_U.free(), d_V.free();
 
-//          double maxError = 0.0;
-//          #pragma omp parallel for reduction(max:maxError)
-//          for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
-//            for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
-//              double value = 0.0;
-//              for (size_t k_dot = 0; k_dot < A_width; ++k_dot) {
-//                value += U.elements[iterator(indexRow, k_dot, A_height)] * s.elements[k_dot]
-//                    * V.elements[iterator(indexCol, k_dot, A_height)];
-//              }
-//              double diff = std::abs(A_copy.elements[iterator(indexRow, indexCol, A_height)] - value);
-//              maxError = std::max<double>(maxError, diff);
-//            }
-//          }
-//
-//          file_output << "max error between A and USV: " << maxError << "\n";
-//          std::cout << "max error between A and USV: " << maxError << "\n";
+          #pragma omp parallel for
+          for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
+            for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
+              double value = 0.0;
+              for (size_t k_dot = 0; k_dot < A_width; ++k_dot) {
+                value += U.elements[iterator(indexRow, k_dot, A_height)] * s.elements[k_dot]
+                    * V.elements[iterator(indexCol, k_dot, A_height)];
+              }
+              A_copy.elements[iterator(indexRow, indexCol, A_height)] -= value;
+            }
+          }
+
+          // Calculate frobenius norm
+          cublasHandle_t handle;
+          cublasCreate(&handle);
+          double frobenius_norm = 0.0;
+          CUDAMatrix d_Delta(A_copy);
+          auto status = cublasDnrm2(handle, height * width,reinterpret_cast<const double *>(d_Delta.elements), 1, &frobenius_norm);
+          if(status == CUBLAS_STATUS_SUCCESS){
+            file_output << "||A-USVt||_F: " << frobenius_norm << "\n";
+            std::cout << "||A-USVt||_F: " << frobenius_norm << "\n";
+          } else {
+            file_output << "Something went wrong on frobenius norm calculus\n";
+            std::cout << "Something went wrong on frobenius norm calculus\n";
+          }
+          cublasDestroy(handle);
+          d_Delta.free();
 
 #ifdef REPORT
           // Report Matrix A=USV
@@ -574,7 +624,6 @@ int main() {
     std::cout << '\n';
   }
 #endif
-          d_A.free(), d_s.free(), d_U.free(), d_V.free();
         }
       }
 
@@ -678,6 +727,31 @@ for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
           file_output << "SVD OMP time with U,V calculation: " << time << "\n";
           std::cout << "SVD OMP time with U,V calculation: " << time << "\n";
 
+          // A - A*
+          #pragma omp parallel for
+          for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
+            for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
+              double value = 0.0;
+              for (size_t k_dot = 0; k_dot < A_width; ++k_dot) {
+                value += A.elements[iterator(indexRow, k_dot, A_height)] * (stat.elements[0] * s.elements[k_dot])
+                    * V.elements[iterator(indexCol, k_dot, A_height)];
+              }
+              A_copy.elements[iteratorC(indexRow, indexCol, A_height)] -= value;
+            }
+          }
+
+          // Calculate frobenius norm
+          double frobenius_norm = 0.0;
+          #pragma omp parallel for reduction(+:frobenius_norm)
+          for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
+            for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
+              double value = A_copy.elements[iteratorC(indexRow, indexCol, A_height)];
+              frobenius_norm += value*value;
+            }
+          }
+
+          file_output << "||A-USVt||_F: " << sqrt(frobenius_norm) << "\n";
+          std::cout << "||A-USVt||_F: " << sqrt(frobenius_norm) << "\n";
 //          double maxError = 0.0;
 //          for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
 //            for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {

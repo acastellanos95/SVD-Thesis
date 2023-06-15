@@ -1,7 +1,7 @@
 import math
 import numpy as np
 
-n = 9
+n = 20
 m = math.floor((n + 1) / 2)
 print(m)
 
@@ -10,6 +10,7 @@ A = np.zeros((n, n))
 schedule = []
 for k in range(1, m):
     points = []
+    print(k)
     for q in range(m - k + 1, n - k + 1):
         if m - k + 1 <= q <= 2 * m - 2 * k:
             p = (2 * m - 2 * k + 1) - q
@@ -22,24 +23,25 @@ for k in range(1, m):
         A[p - 1, q - 1] = k
     schedule.append(points)
 
-for k in range(m, 2 * m):
-    points = []
-    for q in range(4 * m - n - k, 3 * m - k):
-        if q < 2 * m - k + 1:
-            p = n
-        elif 2 * m - k + 1 <= q <= 4 * m - 2 * k - 1:
-            p = (4 * m - 2 * k) - q
-        elif 4 * m - 2 * k - 1 < q:
-            p = (6 * m - 2 * k - 1) - q
-        points.append(1)
-        print(f"({p-1},{q-1})")
-        A[p - 1, q - 1] = k
-    schedule.append(points)
+# for k in range(m, 2 * m):
+#     points = []
+#     print(k)
+#     for q in range(4 * m - n - k, 3 * m - k):
+#         if q < 2 * m - k + 1:
+#             p = n
+#         elif 2 * m - k + 1 <= q <= 4 * m - 2 * k - 1:
+#             p = (4 * m - 2 * k) - q
+#         elif 4 * m - 2 * k - 1 < q:
+#             p = (6 * m - 2 * k - 1) - q
+#         points.append(1)
+#         print(f"({p-1},{q-1})")
+#         A[p - 1, q - 1] = k
+#     schedule.append(points)
 
 print(A)
 
-for points in schedule:
-    print(len(points))
+# for points in schedule:
+#     print(len(points))
 
 print(math.floor(n/2))
 # A = np.zeros((n, n))
