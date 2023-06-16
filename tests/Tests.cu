@@ -932,4 +932,157 @@ void compare_cuda_operations(){
 }
 */
 
+void compare_times_dot_product() {
+  for(size_t i = 5000; i <= 50000; i += 5000){
+    {
+      std::cout << "vector size: " << i << '\n';
+
+      Matrix a(1,i), b(1,i);
+      std::random_device random_device;
+      std::uniform_real_distribution<double> d(0.0,1.0);
+      for(size_t index_v = 0; index_v < i; ++index_v){
+        a.elements[index_v] = d(random_device);
+        b.elements[index_v] = d(random_device);
+      }
+
+      double dot_product = 0.0;
+
+      double ti = omp_get_wtime();
+      #pragma omp parallel for reduction(+:dot_product)
+      for(size_t index_v = 0; index_v < i; ++index_v){
+        double valueA = a.elements[index_v];
+        double valueB = b.elements[index_v];
+
+        dot_product += valueA * valueB;
+      }
+      double tf = omp_get_wtime();
+      double time = tf - ti;
+
+      std::cout << "omp_time: " << time << '\n';
+      std::cout << "result: " << dot_product << '\n';
+
+
+      cublasHandle_t handle;
+      cublasCreate(&handle);
+      double cuda_dot_product = 0.0;
+
+      double ti_cuda = omp_get_wtime();
+      CUDAMatrix d_A(a), d_B(b);
+      cublasDdot(handle, i,
+                 reinterpret_cast<const double *>(d_A.elements), 1,
+                 reinterpret_cast<const double *>(d_B.elements), 1,
+                 &cuda_dot_product);
+      d_A.copy_to_host(a), d_B.copy_to_host(b);
+      double tf_cuda = omp_get_wtime();
+      double cuda_time = tf_cuda - ti_cuda;
+
+      std::cout << "cuda_time: " << cuda_time << '\n';
+      std::cout << "result: " << cuda_dot_product << '\n';
+
+      cublasDestroy(handle);
+      d_A.free(), d_B.free();
+    }
+  }
+}
+
+void compare_times_jacobi_matrix_product() {
+  for(size_t i = 5000; i <= 50000; i += 5000){
+    {
+      std::cout << "vector size: " << i << '\n';
+
+      Matrix a(1,i), b(1,i);
+      std::random_device random_device;
+      std::uniform_real_distribution<double> d(0.0,1.0);
+      for(size_t index_v = 0; index_v < i; ++index_v){
+        a.elements[index_v] = d(random_device);
+        b.elements[index_v] = d(random_device);
+      }
+
+      double alpha = 0.0, beta = 0.0, gamma = 0.0;
+      // \alpha = a_p^T\cdot a_q, \beta = a_p^T\cdot a_p, \gamma = a_q^T\cdot a_q
+      double tmp_p, tmp_q;
+      for (size_t index_v = 0; index_v < i; ++index_v) {
+        tmp_p = a.elements[index_v];
+        tmp_q = b.elements[index_v];
+        alpha += tmp_p * tmp_q;
+        beta += tmp_p * tmp_p;
+        gamma += tmp_q * tmp_q;
+      }
+
+      double tau = (gamma - beta) / (2.0 * alpha);
+      double t = 0.0;
+
+      if (tau >= 0) {
+        t = 1.0 / (tau + sqrt(1 + (tau * tau)));
+      } else {
+        t = 1.0 / (tau - sqrt(1 + (tau * tau)));
+      }
+
+      const double c_schur = 1.0 / sqrt(1 + (t * t));
+      const double s_schur = t * c_schur;
+
+      double ti = omp_get_wtime();
+      double tmp_A_p = 0.0, tmp_A_q = 0.0;
+      for (size_t index_v = 0; index_v < i; ++index_v) {
+        tmp_A_p = a.elements[index_v];
+        tmp_A_q = b.elements[index_v];
+        tmp_p = c_schur * tmp_A_p - s_schur * tmp_A_q;
+        tmp_q = s_schur * tmp_A_p + c_schur * tmp_A_q;
+        a.elements[index_v] = tmp_p;
+        b.elements[index_v] = tmp_q;
+      }
+      double tf = omp_get_wtime();
+      double time = tf - ti;
+
+      std::cout << "omp_time: " << time << '\n';
+
+      for(size_t index_v = 0; index_v < i; ++index_v){
+        a.elements[index_v] = d(random_device);
+        b.elements[index_v] = d(random_device);
+      }
+
+      alpha = 0.0, beta = 0.0, gamma = 0.0;
+      // \alpha = a_p^T\cdot a_q, \beta = a_p^T\cdot a_p, \gamma = a_q^T\cdot a_q
+      tmp_p = 0.0, tmp_q = 0.0;
+      for (size_t index_v = 0; index_v < i; ++index_v) {
+        tmp_p = a.elements[index_v];
+        tmp_q = b.elements[index_v];
+        alpha += tmp_p * tmp_q;
+        beta += tmp_p * tmp_p;
+        gamma += tmp_q * tmp_q;
+      }
+
+      tau = (gamma - beta) / (2.0 * alpha);
+      t = 0.0;
+
+      if (tau >= 0) {
+        t = 1.0 / (tau + sqrt(1 + (tau * tau)));
+      } else {
+        t = 1.0 / (tau - sqrt(1 + (tau * tau)));
+      }
+
+      const double cuda_c_schur = 1.0 / sqrt(1 + (t * t));
+      const double cuda_s_schur = t * cuda_c_schur;
+
+
+      cublasHandle_t handle;
+      cublasCreate(&handle);
+
+      double ti_cuda = omp_get_wtime();
+      CUDAMatrix d_A(a), d_B(b);
+      cublasDrot(handle, i,
+                 d_A.elements, 1,
+                 d_B.elements, 1,
+                 &cuda_c_schur, &cuda_s_schur);
+      d_A.copy_to_host(a), d_B.copy_to_host(b);
+      double tf_cuda = omp_get_wtime();
+      double cuda_time = tf_cuda - ti_cuda;
+
+      std::cout << "cuda_time: " << cuda_time << '\n';
+
+      cublasDestroy(handle);
+      d_A.free(), d_B.free();
+    }
+  }
+}
 }

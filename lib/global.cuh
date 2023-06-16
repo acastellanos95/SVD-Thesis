@@ -9,11 +9,22 @@
 //#define DEBUG
 //#define SEQUENTIAL
 //#define REPORT
-#define OMP
+//#define OMP
 //#define LAPACK
 //#define CUDA
 //#define IMKL
-//#define TESTS
+#define TESTS
+
+#define CHECK_CUBLAS(call)                                                     \
+{                                                                              \
+    cublasStatus_t err;                                                        \
+    if ((err = (call)) != CUBLAS_STATUS_SUCCESS)                               \
+    {                                                                          \
+        fprintf(stderr, "Got CUBLAS error %d at %s:%d\n", err, __FILE__,       \
+                __LINE__);                                                     \
+        exit(1);                                                               \
+    }                                                                          \
+}
 
 #define iteratorR(i,j,ld)(((i)*(ld))+(j))
 #define iteratorC(i,j,ld)(((j)*(ld))+(i))

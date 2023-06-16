@@ -14,6 +14,8 @@
 namespace Thesis {
   void max_iterations_error();
   void compare_cuda_operations();
+  void compare_times_dot_product();
+  void compare_times_jacobi_matrix_product();
 }
 
 #endif //SVD_THESIS_TESTS_TESTS_CUH_

@@ -1,3 +1,5 @@
+#include <cublas_v2.h>
+#include <cuda_runtime.h>
 #include <iostream>
 #include <random>
 #include <omp.h>
@@ -19,10 +21,12 @@ int main() {
 #ifdef TESTS
 //  Thesis::max_iterations_error();
 //  Thesis::compare_cuda_operations();
+//  Thesis::compare_times_dot_product();
+  Thesis::compare_times_jacobi_matrix_product();
 #endif
 
   size_t begin = 1000;
-  size_t end = 1000;
+  size_t end = 5000;
   size_t delta = 1000;
   auto t = std::time(nullptr);
   auto tm = *std::localtime(&t);
@@ -426,7 +430,7 @@ int main() {
 #ifdef CUDA
     {
       double time_avg = 0.0;
-      auto times_repeat = 10;
+      auto times_repeat = 2;
       for(auto i_repeat = 0; i_repeat < times_repeat; ++i_repeat){
         {
           // Build matrix A and R
@@ -526,17 +530,28 @@ int main() {
 
           // Calculate SVD decomposition
           double ti = omp_get_wtime();
-          Thesis::cuda_dgesvd(Thesis::AllVec,
-                              Thesis::AllVec,
-                              A.height,
-                              A.width,
-                              d_A,
-                              A_height,
-                              d_s,
-                              d_U,
-                              A_height,
-                              d_V,
-                              A_width);
+//          Thesis::cuda_dgesvd(Thesis::AllVec,
+//                              Thesis::AllVec,
+//                              A.height,
+//                              A.width,
+//                              d_A,
+//                              A_height,
+//                              d_s,
+//                              d_U,
+//                              A_height,
+//                              d_V,
+//                              A_width);
+//          Thesis::cuda_streams_dgesvd(Thesis::AllVec,
+//                              Thesis::AllVec,
+//                              A.height,
+//                              A.width,
+//                              d_A,
+//                              A_height,
+//                              d_s,
+//                              d_U,
+//                              A_height,
+//                              d_V,
+//                              A_width);
           double tf = omp_get_wtime();
           double time = tf - ti;
           time_avg += time;

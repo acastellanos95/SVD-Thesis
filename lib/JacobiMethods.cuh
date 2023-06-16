@@ -72,7 +72,20 @@ void cuda_dgesvd(SVD_OPTIONS jobu,
                  CUDAMatrix &V,
                  size_t ldv);
 
-__global__ void initialize_V();
+#ifdef CUDA
+void cuda_streams_dgesvd(SVD_OPTIONS jobu,
+                         SVD_OPTIONS jobv,
+                         size_t m,
+                         size_t n,
+                         CUDAMatrix &A,
+                         size_t lda,
+                         CUDAMatrix &s,
+                         CUDAMatrix &U,
+                         size_t ldu,
+                         CUDAMatrix &V,
+                         size_t ldv);
+__global__ void jacobi_transformation(double *A, size_t p, size_t q);
+#endif
 }
 
 #endif //SVD_THESIS_LIB_JACOBIMETHODS_CUH_
