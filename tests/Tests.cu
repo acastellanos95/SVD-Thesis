@@ -1085,4 +1085,243 @@ void compare_times_jacobi_matrix_product() {
     }
   }
 }
+
+void correctness_jacobi_kernel() {
+  std::cout << "Correctness of Jacobi Kernel\n";
+  for(auto size_of_vector = 1000; size_of_vector <= 10000; size_of_vector += 1000){
+    size_t number_of_tests = 100;
+    std::cout << "size of array: " << size_of_vector << ", number of test: " << number_of_tests << '\n';
+    for(auto index_test = 0; index_test < number_of_tests; ++index_test){
+      Matrix p_vector(1, size_of_vector), q_vector(1, size_of_vector);
+
+      /* --------------------------------- Initialize array ---------------------------------------*/
+      std::random_device random_device;
+      std::mt19937 mt_19937(random_device());
+      std::uniform_real_distribution<double> distribution(0.0, 1.0);
+
+      std::generate(p_vector.elements,p_vector.elements + size_of_vector, [&distribution, &mt_19937](){ return distribution(mt_19937); });
+      std::generate(q_vector.elements,q_vector.elements + size_of_vector, [&distribution, &mt_19937](){ return distribution(mt_19937); });
+
+      double alpha = 0.0, beta = 0.0, gamma = 0.0;
+      // \alpha = a_p^T\cdot a_q, \beta = a_p^T\cdot a_p, \gamma = a_q^T\cdot a_q
+      double tmp_p, tmp_q;
+      for (size_t i = 0; i < size_of_vector; ++i) {
+        tmp_p = p_vector.elements[i];
+        tmp_q = q_vector.elements[i];
+        alpha += tmp_p * tmp_q;
+        beta += tmp_p * tmp_p;
+        gamma += tmp_q * tmp_q;
+      }
+
+      // Schur
+      double c_schur = 1.0, s_schur = 0.0, aqq = gamma, app = beta, apq = alpha;
+
+      if (abs(apq) > tolerance) {
+//        std::cout << "Rotation initalized\n";
+        double tau = (aqq - app) / (2.0 * apq);
+        double t = 0.0;
+
+        if (tau >= 0) {
+          t = 1.0 / (tau + sqrt(1 + (tau * tau)));
+        } else {
+          t = 1.0 / (tau - sqrt(1 + (tau * tau)));
+        }
+
+        c_schur = 1.0 / sqrt(1 + (t * t));
+        s_schur = t * c_schur;
+
+        CUDAMatrix d_p_vector(p_vector), d_q_vector(q_vector);
+
+        /* --------------------------------- Compute jacobi rotation in host ---------------------------------------*/
+        double tmp_A_p, tmp_A_q;
+        for (size_t i = 0; i < size_of_vector; ++i) {
+          tmp_A_p = p_vector.elements[i];
+          tmp_A_q = q_vector.elements[i];
+          tmp_p = c_schur * tmp_A_p - s_schur * tmp_A_q;
+          tmp_q = s_schur * tmp_A_p + c_schur * tmp_A_q;
+          p_vector.elements[i] = tmp_p;
+          q_vector.elements[i] = tmp_q;
+        }
+
+        /* --------------------------------- Compute jacobi rotation in device ---------------------------------------*/
+        int threadsPerBlock = 16;
+        dim3 blocksPerGrid  (ceil( float(size_of_vector) / threadsPerBlock ));
+        jacobi_rotation<<<blocksPerGrid, threadsPerBlock>>>(size_of_vector, d_p_vector.elements, d_q_vector.elements, c_schur, s_schur);
+        cudaDeviceSynchronize();
+
+        Matrix p_copy(1, size_of_vector), q_copy(1, size_of_vector);
+
+        d_p_vector.copy_to_host(p_copy);
+        d_q_vector.copy_to_host(q_copy);
+
+        /* --------------------------------- Compute frobenius norm ---------------------------------------*/
+
+        // Calculate frobenius norm
+        double p_frobenius_norm = 0.0;
+        for (size_t i = 0; i < size_of_vector; ++i) {
+          double value = p_copy.elements[i] - p_vector.elements[i];
+          p_frobenius_norm += value*value;
+        }
+
+        if(p_frobenius_norm > 1e-16)
+          std::cout << "||p - p||_F: " << sqrt(p_frobenius_norm) << "\n";
+
+        d_p_vector.free();
+        d_q_vector.free();
+      }
+    }
+  }
+}
+
+void upload_download_correctness_jacobi_kernel(size_t height, size_t width) {
+  Matrix A(height, width), A_copy(height, width);
+  // Create R matrix
+  std::random_device random_device;
+  std::mt19937 mt_19937(random_device());
+  std::uniform_real_distribution<double> uniform_dist(0.0, 1.0);
+  for (size_t indexRow = 0; indexRow < height; ++indexRow) {
+    for (size_t indexCol = 0; indexCol < width; ++indexCol) {
+      double value = uniform_dist(mt_19937);
+      A.elements[iteratorC(indexRow, indexCol, height)] = value;
+      A_copy.elements[iteratorC(indexRow, indexCol, height)] = 0.0;
+    }
+  }
+
+  std::cout << "Correctness of Jacobi Kernel\n";
+  double *d_a;
+  cudaMalloc(&d_a, height * sizeof(double ));
+  for(auto indexCol = 0; indexCol < width; indexCol++){
+    cudaMemcpy(d_a, (A.elements + indexCol*height), height * sizeof(double),
+               cudaMemcpyHostToDevice);
+//    CUDAMatrix d_vector(A.elements + indexCol * height, height);
+    cudaMemcpy((A_copy.elements + indexCol*height), d_a, height * sizeof(double),
+               cudaMemcpyDeviceToHost);
+//    d_vector.copy_to_host(A_copy.elements + indexCol * height, height);
+//
+//    d_vector.free();
+  }
+  cudaFree(d_a);
+
+  // Calculate frobenius norm
+  double frobenius_norm = 0.0;
+
+  #pragma omp parallel for reduction(+:frobenius_norm)
+  for (size_t indexRow = 0; indexRow < height; ++indexRow) {
+    for (size_t indexCol = 0; indexCol < width; ++indexCol) {
+      double value = A_copy.elements[iteratorC(indexRow, indexCol, height)] - A.elements[iteratorC(indexRow, indexCol, height)];
+      frobenius_norm += value*value;
+    }
+  }
+
+  std::cout << "||A-USVt||_F: " << sqrt(frobenius_norm) << "\n";
+}
+
+void jacobi_kernel_time_comparison() {
+  std::cout << "Comparison times of Jacobi Kernel\n";
+  for(auto size_of_vector = 10000; size_of_vector <= 50000; size_of_vector += 10000){
+    size_t number_of_tests = 100;
+    std::cout << "size of array: " << size_of_vector << ", number of test: " << number_of_tests << '\n';
+
+    double kernel_time_avg = 0.0;
+    double upload_time_avg = 0.0;
+    double download_time_avg = 0.0;
+    int threadsPerBlock = 16;
+    dim3 blocksPerGrid  (ceil( float(size_of_vector) / threadsPerBlock ));
+
+    for(auto index_test = 0; index_test < number_of_tests; ++index_test){
+      Matrix p_vector(1, size_of_vector), q_vector(1, size_of_vector);
+
+      /* --------------------------------- Initialize array ---------------------------------------*/
+      std::random_device random_device;
+      std::mt19937 mt_19937(random_device());
+      std::uniform_real_distribution<double> distribution(0.0, 1.0);
+
+      std::generate(p_vector.elements,p_vector.elements + size_of_vector, [&distribution, &mt_19937](){ return distribution(mt_19937); });
+      std::generate(q_vector.elements,q_vector.elements + size_of_vector, [&distribution, &mt_19937](){ return distribution(mt_19937); });
+
+      double alpha = 0.0, beta = 0.0, gamma = 0.0;
+      // \alpha = a_p^T\cdot a_q, \beta = a_p^T\cdot a_p, \gamma = a_q^T\cdot a_q
+      double tmp_p, tmp_q;
+      for (size_t i = 0; i < size_of_vector; ++i) {
+        tmp_p = p_vector.elements[i];
+        tmp_q = q_vector.elements[i];
+        alpha += tmp_p * tmp_q;
+        beta += tmp_p * tmp_p;
+        gamma += tmp_q * tmp_q;
+      }
+
+      // Schur
+      double c_schur = 1.0, s_schur = 0.0, aqq = gamma, app = beta, apq = alpha;
+
+      if (abs(apq) > tolerance) {
+//        std::cout << "Rotation initalized\n";
+        double tau = (aqq - app) / (2.0 * apq);
+        double t = 0.0;
+
+        if (tau >= 0) {
+          t = 1.0 / (tau + sqrt(1 + (tau * tau)));
+        } else {
+          t = 1.0 / (tau - sqrt(1 + (tau * tau)));
+        }
+
+        c_schur = 1.0 / sqrt(1 + (t * t));
+        s_schur = t * c_schur;
+
+        double malloc_time_init = omp_get_wtime();
+        CUDAMatrix d_p_vector(p_vector), d_q_vector(q_vector);
+        double malloc_time_final = omp_get_wtime();
+
+        upload_time_avg += (malloc_time_final - malloc_time_init);
+
+        /* --------------------------------- Compute jacobi rotation in host ---------------------------------------*/
+        double tmp_A_p, tmp_A_q;
+        for (size_t i = 0; i < size_of_vector; ++i) {
+          tmp_A_p = p_vector.elements[i];
+          tmp_A_q = q_vector.elements[i];
+          tmp_p = c_schur * tmp_A_p - s_schur * tmp_A_q;
+          tmp_q = s_schur * tmp_A_p + c_schur * tmp_A_q;
+          p_vector.elements[i] = tmp_p;
+          q_vector.elements[i] = tmp_q;
+        }
+
+        /* --------------------------------- Compute jacobi rotation in device ---------------------------------------*/
+        double jacobi_rotation_time_init = omp_get_wtime();
+        jacobi_rotation<<<blocksPerGrid, threadsPerBlock>>>(size_of_vector, d_p_vector.elements, d_q_vector.elements, c_schur, s_schur);
+        cudaDeviceSynchronize();
+        double jacobi_rotation_time_final = omp_get_wtime();
+
+        kernel_time_avg += (jacobi_rotation_time_final - jacobi_rotation_time_init);
+
+        Matrix p_copy(1, size_of_vector), q_copy(1, size_of_vector);
+
+        double device_to_host_time_init = omp_get_wtime();
+        d_p_vector.copy_to_host(p_copy);
+        d_q_vector.copy_to_host(q_copy);
+        double device_to_host_time_final = omp_get_wtime();
+
+        download_time_avg += (device_to_host_time_final - device_to_host_time_init);
+
+        /* --------------------------------- Compute frobenius norm ---------------------------------------*/
+
+        // Calculate frobenius norm
+        double p_frobenius_norm = 0.0;
+        for (size_t i = 0; i < size_of_vector; ++i) {
+          double value = p_copy.elements[i] - p_vector.elements[i];
+          p_frobenius_norm += value*value;
+        }
+
+        if(p_frobenius_norm > 1e-16)
+          std::cout << "||p - p||_F: " << sqrt(p_frobenius_norm) << "\n";
+
+        d_p_vector.free();
+        d_q_vector.free();
+      }
+    }
+
+    std::cout << "upload time average: " << upload_time_avg << '\n';
+    std::cout << "kernel time average: " << kernel_time_avg << '\n';
+    std::cout << "download time average: " << download_time_avg << '\n';
+
+  }
+}
 }

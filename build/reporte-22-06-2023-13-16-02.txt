@@ -1,0 +1,15 @@
+NT: 16
+Number of threads: 16
+-------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+Dimensions, height: 100, width: 100
+SVD OMP time with U,V calculation: 0.946168
+||A-USVt||_F: 2.08165e-15
+-------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+Dimensions, height: 100, width: 100
+SVD OMP time with U,V calculation: 0.426579
+||A-USVt||_F: 2.27616e-15
+-------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+Dimensions, height: 100, width: 100
+SVD OMP time with U,V calculation: 0.436592
+||A-USVt||_F: 2.18224e-15
+Tiempo promedio: 0.603113

@@ -12,6 +12,8 @@
 //#define OMP
 //#define LAPACK
 //#define CUDA
+#define CUDA_KERNEL
+//#define CUDA_KERNEL_GPU
 //#define IMKL
 #define TESTS
 
@@ -22,6 +24,18 @@
     {                                                                          \
         fprintf(stderr, "Got CUBLAS error %d at %s:%d\n", err, __FILE__,       \
                 __LINE__);                                                     \
+        exit(1);                                                               \
+    }                                                                          \
+}
+
+#define CHECK_CUDA(call)                                                     \
+{                                                                              \
+    cudaError_t err;                                                        \
+    if ((err = (call)) != cudaSuccess)                               \
+    {                                                                          \
+        fprintf(stderr, "Got CUDA error %d at %s:%d\n", err, __FILE__,       \
+                __LINE__);                                                   \
+        fprintf(stderr, "Got CUDA error %s\n", cudaGetErrorString(err));                                                   \
         exit(1);                                                               \
     }                                                                          \
 }

@@ -1251,55 +1251,941 @@ void cuda_streams_dgesvd(SVD_OPTIONS jobu,
   cublasDestroy(handle);
 }
 
-#ifdef CUDA
-/*
- __global__ void jacobi_transformation(double *A, size_t p, size_t q, size_t m, double tolerance){
+void cuda_dgesvd_kernel(SVD_OPTIONS jobu,
+                SVD_OPTIONS jobv,
+                size_t m,
+                size_t n,
+                Matrix &A,
+                size_t lda,
+                Matrix &s,
+                Matrix &V,
+                size_t ldv) {
+  auto num_of_threads = Thesis::omp_thread_count();
 
-  double alpha = 0.0, beta = 0.0, gamma = 0.0;
-  // \alpha = a_p^T\cdot a_q, \beta = a_p^T\cdot a_p, \gamma = a_q^T\cdot a_q
-  cublasDdot(handle, m,
-             reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
-             reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
-             &alpha);
-  cublasDdot(handle, m,
-             reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
-             reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
-             &beta);
-  cublasDdot(handle, m,
-             reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
-             reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
-             &gamma);
+  int threadsPerBlock = 16;
+  dim3 A_blocksPerGrid  (ceil( float(m) / threadsPerBlock ));
+  dim3 V_blocksPerGrid  (ceil( float(n) / threadsPerBlock ));
 
-  // abs(a_p^T\cdot a_q) / sqrt((a_p^T\cdot a_p)(a_q^T\cdot a_q))
-  double convergence_value = abs(alpha) / sqrt(beta * gamma);
-
-  if (convergence_value > tolerance) {
-    // Schur
-    if (abs(alpha) > tolerance) {
-      double tau = (gamma - beta) / (2.0 * alpha);
-      double t = 0.0;
-
-      if (tau >= 0) {
-        t = 1.0 / (tau + sqrt(1 + (tau * tau)));
-      } else {
-        t = 1.0 / (tau - sqrt(1 + (tau * tau)));
-      }
-
-      const double c_schur = 1.0 / sqrt(1 + (t * t));
-      const double s_schur = t * c_schur;
-
-      cublasDrot(handle, m,
-                 A.elements + m * q_trans, 1,
-                 A.elements + m * p_trans, 1,
-                 &c_schur, &s_schur);
-
-      cublasDrot(handle, m,
-                 V.elements + m * q_trans, 1,
-                 V.elements + m * p_trans, 1,
-                 &c_schur, &s_schur);
+  // Initializing V = 1
+  if (jobv == AllVec) {
+    for (size_t i = 0; i < n; ++i) {
+      V.elements[iteratorC(i, i, ldv)] = 1.0;
+    }
+  } else if (jobv == SomeVec) {
+    for (size_t i = 0; i < std::min(m, n); ++i) {
+      V.elements[iteratorC(i, i, ldv)] = 1.0;
     }
   }
-}
-*/
+
+  size_t m_ordering = (n + 1) / 2;
+
+#ifdef DEBUG
+  // Report Matrix A^T * A
+  std::cout << std::fixed << std::setprecision(3) << "A^T * A: \n";
+  for (size_t indexRow = 0; indexRow < m; ++indexRow) {
+    for (size_t indexCol = 0; indexCol < n; ++indexCol) {
+      double value = 0.0;
+      for(size_t k_dot = 0; k_dot < m; ++k_dot){
+        value += A.elements[iterator(k_dot, indexRow, lda)] * A.elements[iterator(k_dot, indexCol, lda)];
+      }
+      std::cout << value << " ";
+    }
+    std::cout << '\n';
+  }
 #endif
+  // Stopping condition in Hogben, L. (Ed.). (2013). Handbook of Linear Algebra (2nd ed.). Chapman and Hall/CRC. https://doi.org/10.1201/b16113
+  size_t maxIterations = 2;
+
+  for(auto number_iterations = 0; number_iterations < maxIterations; ++number_iterations){
+
+    std::vector<double*> d_p_vectors(num_of_threads);
+    std::vector<double*> d_q_vectors(num_of_threads);
+    std::vector<double*> d_v_p_vectors(num_of_threads);
+    std::vector<double*> d_v_q_vectors(num_of_threads);
+
+    for(size_t i = 0; i < num_of_threads; i++){
+      cudaMalloc(&d_p_vectors[i], m * sizeof(double));
+      cudaMalloc(&d_q_vectors[i], m * sizeof(double));
+      cudaMalloc(&d_v_p_vectors[i], n * sizeof(double));
+      cudaMalloc(&d_v_q_vectors[i], n * sizeof(double));
+    }
+
+
+    // Ordering in  A. Sameh. On Jacobi and Jacobi-like algorithms for a parallel computer. Math. Comput., 25:579–590,
+    // 1971
+    for (size_t k = 1; k < m_ordering; ++k) {
+      size_t p = 0;
+      size_t p_trans = 0;
+      size_t q_trans = 0;
+
+      #pragma omp parallel for private(p, p_trans, q_trans)
+      for (size_t q = m_ordering - k + 1; q <= n - k; ++q) {
+        size_t thread_id = omp_get_thread_num();
+        if (m_ordering - k + 1 <= q && q <= (2 * m_ordering) - (2 * k)) {
+          p = ((2 * m_ordering) - (2 * k) + 1) - q;
+        } else if ((2 * m_ordering) - (2 * k) < q && q <= (2 * m_ordering) - k - 1) {
+          p = ((4 * m_ordering) - (2 * k)) - q;
+        } else if ((2 * m_ordering) - k - 1 < q) {
+          p = n;
+        }
+
+        // Translate to (0,0)
+        p_trans = p - 1;
+        q_trans = q - 1;
+
+        double alpha = 0.0, beta = 0.0, gamma = 0.0;
+        // \alpha = a_p^T\cdot a_q, \beta = a_p^T\cdot a_p, \gamma = a_q^T\cdot a_q
+        double tmp_p, tmp_q;
+        for (size_t i = 0; i < m; ++i) {
+          tmp_p = A.elements[iteratorC(i, p_trans, lda)];
+          tmp_q = A.elements[iteratorC(i, q_trans, lda)];
+          alpha += tmp_p * tmp_q;
+          beta += tmp_p * tmp_p;
+          gamma += tmp_q * tmp_q;
+        }
+
+        // Schur
+        double c_schur = 1.0, s_schur = 0.0, aqq = gamma, app = beta, apq = alpha;
+
+        if (abs(apq) > tolerance) {
+          double tau = (aqq - app) / (2.0 * apq);
+          double t = 0.0;
+
+          if (tau >= 0) {
+            t = 1.0 / (tau + sqrt(1 + (tau * tau)));
+          } else {
+            t = 1.0 / (tau - sqrt(1 + (tau * tau)));
+          }
+
+          c_schur = 1.0 / sqrt(1 + (t * t));
+          s_schur = t * c_schur;
+
+          cudaMemcpy(d_p_vectors[thread_id], (A.elements + p_trans*lda), m * sizeof(double),
+                     cudaMemcpyHostToDevice);
+          cudaMemcpy(d_q_vectors[thread_id], (A.elements + q_trans*lda), m * sizeof(double),
+                     cudaMemcpyHostToDevice);
+
+//          CUDAMatrix d_p_vector(, m), d_q_vector((A.elements + q_trans*lda), m);
+
+          jacobi_rotation<<<A_blocksPerGrid, threadsPerBlock>>>(m, d_p_vectors[thread_id], d_q_vectors[thread_id], c_schur, s_schur);
+
+          cudaMemcpy((A.elements + p_trans*lda), d_p_vectors[thread_id],m * sizeof(double),
+                     cudaMemcpyDeviceToHost);
+          cudaMemcpy((A.elements + q_trans*lda), d_q_vectors[thread_id],m * sizeof(double),
+                     cudaMemcpyDeviceToHost);
+//          d_p_vector.copy_to_host((A.elements + p_trans*lda), m);
+//          d_q_vector.copy_to_host((A.elements + q_trans*lda), m);
+//
+//          d_p_vector.free();
+//          d_q_vector.free();
+
+//          if (jobv == AllVec || jobv == SomeVec) {
+//            CUDAMatrix d_v_p_vector((V.elements + p_trans*lda), n), d_v_q_vector((V.elements + q_trans*lda), n);
+
+          cudaMemcpy(d_v_p_vectors[thread_id], (V.elements + p_trans*ldv), n * sizeof(double),
+                     cudaMemcpyHostToDevice);
+          cudaMemcpy(d_v_q_vectors[thread_id], (V.elements + q_trans*ldv), n * sizeof(double),
+                     cudaMemcpyHostToDevice);
+          jacobi_rotation<<<V_blocksPerGrid, threadsPerBlock>>>(n, d_v_p_vectors[thread_id], d_v_q_vectors[thread_id], c_schur, s_schur);
+
+          cudaMemcpy((V.elements + p_trans*ldv), d_v_p_vectors[thread_id],n * sizeof(double),
+                     cudaMemcpyDeviceToHost);
+          cudaMemcpy((V.elements + q_trans*ldv), d_v_q_vectors[thread_id],n * sizeof(double),
+                     cudaMemcpyDeviceToHost);
+//            d_v_p_vector.copy_to_host((V.elements + p_trans*lda), n);
+//            d_v_q_vector.copy_to_host((V.elements + q_trans*lda), n);
+
+//            d_v_p_vector.free();
+//            d_v_q_vector.free();
+//          }
+        }
+      }
+    }
+
+    for (size_t k = m_ordering; k < 2 * m_ordering; ++k) {
+      size_t thread_id = omp_thread_count();
+      size_t p = 0;
+      size_t p_trans = 0;
+      size_t q_trans = 0;
+#pragma omp parallel for private(p, p_trans, q_trans)
+      for (size_t q = (4 * m_ordering) - n - k; q < (3 * m_ordering) - k; ++q) {
+        if (q < (2 * m_ordering) - k + 1) {
+          p = n;
+        } else if ((2 * m_ordering) - k + 1 <= q && q <= (4 * m_ordering) - (2 * k) - 1) {
+          p = ((4 * m_ordering) - (2 * k)) - q;
+        } else if ((4 * m_ordering) - (2 * k) - 1 < q) {
+          p = ((6 * m_ordering) - (2 * k) - 1) - q;
+        }
+
+        // Translate to (0,0)
+        p_trans = p - 1;
+        q_trans = q - 1;
+
+        double alpha = 0.0, beta = 0.0, gamma = 0.0;
+        // \alpha = a_p^T\cdot a_q, \beta = a_p^T\cdot a_p, \gamma = a_q^T\cdot a_q
+        double tmp_p, tmp_q;
+        for (size_t i = 0; i < m; ++i) {
+          tmp_p = A.elements[iteratorC(i, p_trans, lda)];
+          tmp_q = A.elements[iteratorC(i, q_trans, lda)];
+          alpha += tmp_p * tmp_q;
+          beta += tmp_p * tmp_p;
+          gamma += tmp_q * tmp_q;
+        }
+
+        // Schur
+        double c_schur = 1.0, s_schur = 0.0, aqq = gamma, app = beta, apq = alpha;
+
+        if (abs(apq) > tolerance) {
+          double tau = (aqq - app) / (2.0 * apq);
+          double t = 0.0;
+
+          if (tau >= 0) {
+            t = 1.0 / (tau + sqrt(1 + (tau * tau)));
+          } else {
+            t = 1.0 / (tau - sqrt(1 + (tau * tau)));
+          }
+
+          c_schur = 1.0 / sqrt(1 + (t * t));
+          s_schur = t * c_schur;
+
+          cudaMemcpy(d_p_vectors[thread_id], (A.elements + p_trans*lda), m * sizeof(double),
+                     cudaMemcpyHostToDevice);
+          cudaMemcpy(d_q_vectors[thread_id], (A.elements + q_trans*lda), m * sizeof(double),
+                     cudaMemcpyHostToDevice);
+
+//          CUDAMatrix d_p_vector(, m), d_q_vector((A.elements + q_trans*lda), m);
+
+          jacobi_rotation<<<A_blocksPerGrid, threadsPerBlock>>>(m, d_p_vectors[thread_id], d_q_vectors[thread_id], c_schur, s_schur);
+
+          cudaMemcpy((A.elements + p_trans*lda), d_p_vectors[thread_id],m * sizeof(double),
+                     cudaMemcpyDeviceToHost);
+          cudaMemcpy((A.elements + q_trans*lda), d_q_vectors[thread_id],m * sizeof(double),
+                     cudaMemcpyDeviceToHost);
+//          d_p_vector.copy_to_host((A.elements + p_trans*lda), m);
+//          d_q_vector.copy_to_host((A.elements + q_trans*lda), m);
+//
+//          d_p_vector.free();
+//          d_q_vector.free();
+
+//          if (jobv == AllVec || jobv == SomeVec) {
+//            CUDAMatrix d_v_p_vector((V.elements + p_trans*lda), n), d_v_q_vector((V.elements + q_trans*lda), n);
+
+          cudaMemcpy(d_v_p_vectors[thread_id], (V.elements + p_trans*ldv), n * sizeof(double),
+                     cudaMemcpyHostToDevice);
+          cudaMemcpy(d_v_q_vectors[thread_id], (V.elements + q_trans*ldv), n * sizeof(double),
+                     cudaMemcpyHostToDevice);
+          jacobi_rotation<<<V_blocksPerGrid, threadsPerBlock>>>(m, d_v_p_vectors[thread_id], d_v_q_vectors[thread_id], c_schur, s_schur);
+
+          cudaMemcpy((V.elements + p_trans*ldv), d_v_p_vectors[thread_id],n * sizeof(double),
+                     cudaMemcpyDeviceToHost);
+          cudaMemcpy((V.elements + q_trans*ldv), d_v_q_vectors[thread_id],n * sizeof(double),
+                     cudaMemcpyDeviceToHost);
+//            d_v_p_vector.copy_to_host((V.elements + p_trans*lda), n);
+//            d_v_q_vector.copy_to_host((V.elements + q_trans*lda), n);
+
+//            d_v_p_vector.free();
+//            d_v_q_vector.free();
+//          }
+        }
+      }
+    }
+
+    for(size_t i = 0; i < num_of_threads; i++){
+      cudaFree(d_p_vectors[i]);
+      cudaFree(d_q_vectors[i]);
+      cudaFree(d_v_p_vectors[i]);
+      cudaFree(d_v_q_vectors[i]);
+    }
+  }
+
+  std::cout << "How many repetitions?: " << maxIterations << "\n";
+
+  // Compute \Sigma
+#pragma omp parallel for
+  for (size_t k = 0; k < std::min(m, n); ++k) {
+    for (size_t i = 0; i < m; ++i) {
+      s.elements[k] += A.elements[iteratorC(i, k, lda)] * A.elements[iteratorC(i, k, lda)];
+    }
+    s.elements[k] = sqrt(s.elements[k]);
+  }
+
+  //Compute U
+  if (jobu == AllVec) {
+#pragma omp parallel for
+    for (size_t i = 0; i < m; ++i) {
+      for (size_t j = 0; j < m; ++j) {
+        A.elements[iteratorC(j, i, lda)] = A.elements[iteratorC(j, i, lda)] / s.elements[i];
+      }
+    }
+  } else if (jobu == SomeVec) {
+#pragma omp parallel for
+    for (size_t k = 0; k < std::min(m, n); ++k) {
+      for (size_t i = 0; i < m; ++i) {
+        A.elements[iteratorC(i, k, lda)] = A.elements[iteratorC(i, k, lda)] / s.elements[k];
+      }
+    }
+  }
+
+//  delete []ordering_array;
+}
+
+void cuda_dgesvd_kernel(SVD_OPTIONS jobu,
+                        SVD_OPTIONS jobv,
+                        size_t m,
+                        size_t n,
+                        CUDAMatrix &A,
+                        size_t lda,
+                        CUDAMatrix &s,
+                        CUDAMatrix &V,
+                        size_t ldv) {
+  // Create a handle for CUBLAS
+  cublasHandle_t handle;
+  cublasCreate(&handle);
+
+  int threadsPerBlock = 16;
+  dim3 A_blocksPerGrid  (ceil( float(m) / threadsPerBlock ));
+  dim3 V_blocksPerGrid  (ceil( float(n) / threadsPerBlock ));
+
+  size_t m_ordering = (n + 1) / 2;
+
+#ifdef DEBUG
+  // Report Matrix A^T * A
+  std::cout << std::fixed << std::setprecision(3) << "A^T * A: \n";
+  for (size_t indexRow = 0; indexRow < m; ++indexRow) {
+    for (size_t indexCol = 0; indexCol < n; ++indexCol) {
+      double value = 0.0;
+      for(size_t k_dot = 0; k_dot < m; ++k_dot){
+        value += A.elements[iterator(k_dot, indexRow, lda)] * A.elements[iterator(k_dot, indexCol, lda)];
+      }
+      std::cout << value << " ";
+    }
+    std::cout << '\n';
+  }
+#endif
+  // Stopping condition in Hogben, L. (Ed.). (2013). Handbook of Linear Algebra (2nd ed.). Chapman and Hall/CRC. https://doi.org/10.1201/b16113
+  size_t maxIterations = 1;
+
+  for(auto number_iterations = 0; number_iterations < maxIterations; ++number_iterations){
+    // Ordering in  A. Sameh. On Jacobi and Jacobi-like algorithms for a parallel computer. Math. Comput., 25:579–590,
+    // 1971
+    for (size_t k = 1; k < m_ordering; ++k) {
+      size_t p = 0;
+      size_t p_trans = 0;
+      size_t q_trans = 0;
+#pragma omp parallel for private(p, p_trans, q_trans)
+      for (size_t q = m_ordering - k + 1; q <= n - k; ++q) {
+        if (m_ordering - k + 1 <= q && q <= (2 * m_ordering) - (2 * k)) {
+          p = ((2 * m_ordering) - (2 * k) + 1) - q;
+        } else if ((2 * m_ordering) - (2 * k) < q && q <= (2 * m_ordering) - k - 1) {
+          p = ((4 * m_ordering) - (2 * k)) - q;
+        } else if ((2 * m_ordering) - k - 1 < q) {
+          p = n;
+        }
+
+        // Translate to (0,0)
+        p_trans = p - 1;
+        q_trans = q - 1;
+
+        double alpha = 0.0, beta = 0.0, gamma = 0.0;
+
+        cublasDdot(handle, m,
+                   reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
+                   reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
+                   &alpha);
+        cublasDdot(handle, m,
+                   reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
+                   reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
+                   &beta);
+        cublasDdot(handle, m,
+                   reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
+                   reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
+                   &gamma);
+
+        // Schur
+        double c_schur = 1.0, s_schur = 0.0, aqq = gamma, app = beta, apq = alpha;
+
+        if (abs(apq) > tolerance) {
+          double tau = (aqq - app) / (2.0 * apq);
+          double t = 0.0;
+
+          if (tau >= 0) {
+            t = 1.0 / (tau + sqrt(1 + (tau * tau)));
+          } else {
+            t = 1.0 / (tau - sqrt(1 + (tau * tau)));
+          }
+
+          c_schur = 1.0 / sqrt(1 + (t * t));
+          s_schur = t * c_schur;
+
+          jacobi_rotation<<<A_blocksPerGrid, threadsPerBlock>>>(m, (A.elements + p_trans*lda), (A.elements + q_trans*lda), c_schur, s_schur);
+          jacobi_rotation<<<V_blocksPerGrid, threadsPerBlock>>>(m, (V.elements + p_trans*lda), (V.elements + q_trans*lda), c_schur, s_schur);
+        }
+      }
+    }
+
+    for (size_t k = m_ordering; k < 2 * m_ordering; ++k) {
+      size_t p = 0;
+      size_t p_trans = 0;
+      size_t q_trans = 0;
+#pragma omp parallel for private(p, p_trans, q_trans)
+      for (size_t q = (4 * m_ordering) - n - k; q < (3 * m_ordering) - k; ++q) {
+        if (q < (2 * m_ordering) - k + 1) {
+          p = n;
+        } else if ((2 * m_ordering) - k + 1 <= q && q <= (4 * m_ordering) - (2 * k) - 1) {
+          p = ((4 * m_ordering) - (2 * k)) - q;
+        } else if ((4 * m_ordering) - (2 * k) - 1 < q) {
+          p = ((6 * m_ordering) - (2 * k) - 1) - q;
+        }
+
+        // Translate to (0,0)
+        p_trans = p - 1;
+        q_trans = q - 1;
+
+        double alpha = 0.0, beta = 0.0, gamma = 0.0;
+        cublasDdot(handle, m,
+                   reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
+                   reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
+                   &alpha);
+        cublasDdot(handle, m,
+                   reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
+                   reinterpret_cast<const double *>(A.elements + m * p_trans), 1,
+                   &beta);
+        cublasDdot(handle, m,
+                   reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
+                   reinterpret_cast<const double *>(A.elements + m * q_trans), 1,
+                   &gamma);
+
+        // Schur
+        double c_schur = 1.0, s_schur = 0.0, aqq = gamma, app = beta, apq = alpha;
+
+        if (abs(apq) > tolerance) {
+          double tau = (aqq - app) / (2.0 * apq);
+          double t = 0.0;
+
+          if (tau >= 0) {
+            t = 1.0 / (tau + sqrt(1 + (tau * tau)));
+          } else {
+            t = 1.0 / (tau - sqrt(1 + (tau * tau)));
+          }
+
+          c_schur = 1.0 / sqrt(1 + (t * t));
+          s_schur = t * c_schur;
+
+          jacobi_rotation<<<A_blocksPerGrid, threadsPerBlock>>>(m, (A.elements + p_trans*lda), (A.elements + q_trans*lda), c_schur, s_schur);
+          jacobi_rotation<<<V_blocksPerGrid, threadsPerBlock>>>(m, (V.elements + p_trans*lda), (V.elements + q_trans*lda), c_schur, s_schur);
+        }
+      }
+    }
+
+#ifdef DEBUG
+    // Report Matrix A^T * A
+    std::cout << std::fixed << std::setprecision(3) << "A^T * A: \n";
+    for (size_t indexRow = 0; indexRow < m; ++indexRow) {
+      for (size_t indexCol = 0; indexCol < n; ++indexCol) {
+        double value = 0.0;
+        for(size_t k_dot = 0; k_dot < m; ++k_dot){
+          value += A.elements[iterator(k_dot, indexRow, lda)] * A.elements[iterator(k_dot, indexCol, lda)];
+        }
+        std::cout << value << " ";
+      }
+      std::cout << '\n';
+    }
+#endif
+  }
+
+  std::cout << "How many repetitions?: " << maxIterations << "\n";
+
+// Compute \Sigma
+//  cudaDeviceSynchronize();
+  Matrix s_copy(1, std::min(m, n));
+  for (size_t k = 0; k < std::min(m, n); ++k) {
+    double result;
+    cublasDnrm2(handle, m, reinterpret_cast<const double *>(A.elements + m * k), 1, &result);
+    s_copy.elements[k] = result;
+  }
+  s.copy_from_host(s_copy);
+//  std::cout << "Finalized normalization!!\n";
+
+  //Compute U
+//  cudaDeviceSynchronize();
+  for (size_t i = 0; i < m; ++i) {
+    double element = s_copy.elements[i];
+    double scale = 1.0 / element;
+    cublasDscal(handle, m, reinterpret_cast<const double *>(&scale), A.elements + m * i, 1);
+  }
+
+//  delete []ordering_array;
+// Destroy the handle
+  cublasDestroy(handle);
+}
+
+//#ifdef ERASE
+void cuda_dgesvd_kernel_streams(SVD_OPTIONS jobu,
+                                SVD_OPTIONS jobv,
+                                size_t m,
+                                size_t n,
+                                Matrix &A,
+                                size_t lda,
+                                Matrix &s,
+                                Matrix &V,
+                                size_t ldv) {
+
+  size_t m_bytes = m * sizeof(double);
+  size_t n_bytes = n * sizeof(double);
+
+  auto num_of_threads = omp_thread_count();
+
+  int threadsPerBlock = 16;
+  dim3 A_blocksPerGrid  (ceil( float(m) / threadsPerBlock ));
+  dim3 V_blocksPerGrid  (ceil( float(n) / threadsPerBlock ));
+
+  // Initializing V = 1
+  if (jobv == AllVec) {
+    for (size_t i = 0; i < n; ++i) {
+      V.elements[iteratorC(i, i, ldv)] = 1.0;
+    }
+  } else if (jobv == SomeVec) {
+    for (size_t i = 0; i < std::min(m, n); ++i) {
+      V.elements[iteratorC(i, i, ldv)] = 1.0;
+    }
+  }
+
+  size_t m_ordering = (n + 1) / 2;
+
+#ifdef DEBUG
+  // Report Matrix A^T * A
+  std::cout << std::fixed << std::setprecision(3) << "A^T * A: \n";
+  for (size_t indexRow = 0; indexRow < m; ++indexRow) {
+    for (size_t indexCol = 0; indexCol < n; ++indexCol) {
+      double value = 0.0;
+      for(size_t k_dot = 0; k_dot < m; ++k_dot){
+        value += A.elements[iterator(k_dot, indexRow, lda)] * A.elements[iterator(k_dot, indexCol, lda)];
+      }
+      std::cout << value << " ";
+    }
+    std::cout << '\n';
+  }
+#endif
+  // Stopping condition in Hogben, L. (Ed.). (2013). Handbook of Linear Algebra (2nd ed.). Chapman and Hall/CRC. https://doi.org/10.1201/b16113
+  size_t maxIterations = 1;
+
+  for(auto number_iterations = 0; number_iterations < maxIterations; ++number_iterations){
+    // Ordering in  A. Sameh. On Jacobi and Jacobi-like algorithms for a parallel computer. Math. Comput., 25:579–590,
+    // 1971
+    for (size_t k = 1; k < m_ordering; ++k) {
+      // Create two stream for A and V
+      std::vector<cudaStream_t> streams(2);
+      for(auto &stream: streams){
+        CHECK_CUDA(cudaStreamCreate(&stream));
+      }
+
+      size_t p = 0;
+      size_t p_trans = 0;
+      size_t q_trans = 0;
+      for (size_t q = m_ordering - k + 1; q <= n - k; ++q) {
+        if (m_ordering - k + 1 <= q && q <= (2 * m_ordering) - (2 * k)) {
+          p = ((2 * m_ordering) - (2 * k) + 1) - q;
+        } else if ((2 * m_ordering) - (2 * k) < q && q <= (2 * m_ordering) - k - 1) {
+          p = ((4 * m_ordering) - (2 * k)) - q;
+        } else if ((2 * m_ordering) - k - 1 < q) {
+          p = n;
+        }
+
+        // Translate to (0,0)
+        p_trans = p - 1;
+        q_trans = q - 1;
+
+        double alpha = 0.0, beta = 0.0, gamma = 0.0;
+        // \alpha = a_p^T\cdot a_q, \beta = a_p^T\cdot a_p, \gamma = a_q^T\cdot a_q
+        double tmp_p, tmp_q;
+        for (size_t i = 0; i < m; ++i) {
+          tmp_p = A.elements[iteratorC(i, p_trans, lda)];
+          tmp_q = A.elements[iteratorC(i, q_trans, lda)];
+          alpha += tmp_p * tmp_q;
+          beta += tmp_p * tmp_p;
+          gamma += tmp_q * tmp_q;
+        }
+
+        // Schur
+        double c_schur = 1.0, s_schur = 0.0, aqq = 0.0, app = 0.0, apq = alpha;
+
+        // Calculate a_{pp}, a_{qq}, a_{pq}
+        for (size_t i = 0; i < m; ++i) {
+          double value_p = A.elements[iteratorC(i, p_trans, lda)];
+          double value_q = A.elements[iteratorC(i, q_trans, lda)];
+          app += value_p * value_p;
+          aqq += value_q * value_q;
+        }
+
+        if (abs(apq) > tolerance) {
+          double tau = (aqq - app) / (2.0 * apq);
+          double t = 0.0;
+
+          if (tau >= 0) {
+            t = 1.0 / (tau + sqrt(1 + (tau * tau)));
+          } else {
+            t = 1.0 / (tau - sqrt(1 + (tau * tau)));
+          }
+
+          c_schur = 1.0 / sqrt(1 + (t * t));
+          s_schur = t * c_schur;
+
+          /* ---------------------------------- Create events --------------------------------- */
+
+//          cudaEvent_t eventMallocA, eventMallocV, eventMemCpyAH2D, eventMemCpyVH2D, eventKernelA, eventKernelV,
+//              eventMemCpyAD2H, eventMemCpyVD2H;
+//
+//          CHECK_CUDA(cudaEventCreate(&eventMallocA));
+//          cudaEventCreate(&eventMallocV);
+//          cudaEventCreate(&eventMemCpyAH2D);
+//          cudaEventCreate(&eventMemCpyVH2D);
+//          cudaEventCreate(&eventKernelA);
+//          cudaEventCreate(&eventKernelV);
+//          cudaEventCreate(&eventMemCpyAD2H);
+//          cudaEventCreate(&eventMemCpyVD2H);
+
+          /* ---------------------------------- Malloc and memcpy from host to device --------------------------------- */
+          double *d_p_vector, *d_q_vector, *d_v_p_vector, *d_v_q_vector;
+
+          CHECK_CUDA(cudaMallocAsync(&d_p_vector, m_bytes, streams[0]));
+          CHECK_CUDA(cudaMallocAsync(&d_q_vector, m_bytes, streams[0]));
+//          cudaEventRecord(eventMallocA, stream[0]);
+
+          CHECK_CUDA(cudaMallocAsync(&d_v_p_vector, n_bytes, streams[1]));
+          CHECK_CUDA(cudaMallocAsync(&d_v_q_vector, n_bytes, streams[1]));
+//          cudaEventRecord(eventMallocV, stream[1]);
+
+//          cudaStreamWaitEvent(stream[0], eventMallocA);
+          cudaMemcpyAsync(d_p_vector, &A.elements[iteratorC(0, p_trans, lda)], m * sizeof(double),
+                          cudaMemcpyHostToDevice, streams[0]);
+          cudaMemcpyAsync(d_q_vector, &A.elements[iteratorC(0, q_trans, lda)], m * sizeof(double),
+                          cudaMemcpyHostToDevice, streams[0]);
+//          cudaEventRecord(eventMemCpyAH2D, stream[0]);
+
+//          cudaStreamWaitEvent(stream[1], eventMallocV);
+          cudaMemcpyAsync(d_v_p_vector, &V.elements[iteratorC(0, p_trans, ldv)], n * sizeof(double),
+                          cudaMemcpyHostToDevice, streams[1]);
+          cudaMemcpyAsync(d_v_q_vector, &V.elements[iteratorC(0, q_trans, ldv)], n * sizeof(double),
+                          cudaMemcpyHostToDevice, streams[1]);
+//          cudaEventRecord(eventMemCpyVH2D, stream[1]);
+
+          /* ---------------------------------- Kernel execution --------------------------------- */
+//          cudaStreamWaitEvent(stream[0], eventMemCpyAH2D);
+          jacobi_rotation<<<A_blocksPerGrid, threadsPerBlock, 0, streams[0]>>>(m, d_p_vector, d_q_vector, c_schur, s_schur);
+//          cudaEventRecord(eventKernelA, stream[0]);
+
+//          cudaStreamWaitEvent(stream[1], eventMemCpyVH2D);
+          jacobi_rotation<<<V_blocksPerGrid, threadsPerBlock, 0, streams[1]>>>(m, d_v_p_vector, d_v_q_vector, c_schur, s_schur);
+//          cudaEventRecord(eventKernelV, stream[1]);
+
+          /* ---------------------------------- Malloc and memcpy from device to host --------------------------------- */
+//          cudaStreamWaitEvent(stream[0], eventKernelA);
+          cudaMemcpyAsync(&A.elements[iteratorC(0, p_trans, lda)], d_p_vector, m * sizeof(double), cudaMemcpyDeviceToHost, streams[0]);
+          cudaMemcpyAsync(&A.elements[iteratorC(0, q_trans, lda)], d_q_vector, m * sizeof(double), cudaMemcpyDeviceToHost, streams[0]);
+//          cudaEventRecord(eventMemCpyAD2H, stream[0]);
+
+//          cudaStreamWaitEvent(stream[1], eventKernelV);
+          cudaMemcpyAsync(&V.elements[iteratorC(0, p_trans, ldv)], d_v_p_vector, n * sizeof(double), cudaMemcpyDeviceToHost, streams[1]);
+          cudaMemcpyAsync(&V.elements[iteratorC(0, q_trans, ldv)], d_v_q_vector, n * sizeof(double), cudaMemcpyDeviceToHost, streams[1]);
+//          cudaEventRecord(eventMemCpyVD2H, stream[1]);
+
+          /* ---------------------------------- Free cuda malloc --------------------------------- */
+//          cudaStreamWaitEvent(stream[0], eventMemCpyAD2H);
+          cudaFreeAsync(d_p_vector, streams[0]);
+          cudaFreeAsync(d_q_vector, streams[0]);
+
+//          cudaStreamWaitEvent(stream[1], eventMemCpyVD2H);
+          cudaFreeAsync(d_v_p_vector, streams[1]);
+          cudaFreeAsync(d_v_q_vector, streams[1]);
+
+          cudaStreamSynchronize(streams[0]);
+          cudaStreamSynchronize(streams[1]);
+
+//          cudaEventDestroy(eventMallocA);
+//          cudaEventDestroy(eventMallocV);
+//          cudaEventDestroy(eventMemCpyAH2D);
+//          cudaEventDestroy(eventMemCpyVH2D);
+//          cudaEventDestroy(eventKernelA);
+//          cudaEventDestroy(eventKernelV);
+//          cudaEventDestroy(eventMemCpyAD2H);
+//          cudaEventDestroy(eventMemCpyVD2H);
+
+//          for (int i = 0; i < 2; ++i) {
+//            cudaStreamDestroy(stream[i]);
+//          }
+        }
+
+#ifdef DEBUG
+        // Report Matrix A^T * A
+        std::cout << std::fixed << std::setprecision(3) << "A^T * A: \n";
+        for (size_t indexRow = 0; indexRow < m; ++indexRow) {
+          for (size_t indexCol = 0; indexCol < n; ++indexCol) {
+            double value = 0.0;
+            for(size_t k_dot = 0; k_dot < m; ++k_dot){
+              value += A.elements[iterator(k_dot, indexRow, lda)] * A.elements[iterator(k_dot, indexCol, lda)];
+            }
+            std::cout << value << " ";
+          }
+          std::cout << '\n';
+        }
+#endif
+      }
+
+//      cudaDeviceSynchronize();
+      for(auto &stream: streams){
+        CHECK_CUDA(cudaStreamDestroy(stream));
+      }
+    }
+
+    for (size_t k = m_ordering; k < 2 * m_ordering; ++k) {
+      // Create two stream for A and V
+      std::vector<cudaStream_t> streams(2);
+      for(auto &stream: streams){
+        CHECK_CUDA(cudaStreamCreate(&stream));
+      }
+
+      size_t p = 0;
+      size_t p_trans = 0;
+      size_t q_trans = 0;
+      for (size_t q = (4 * m_ordering) - n - k; q < (3 * m_ordering) - k; ++q) {
+        if (q < (2 * m_ordering) - k + 1) {
+          p = n;
+        } else if ((2 * m_ordering) - k + 1 <= q && q <= (4 * m_ordering) - (2 * k) - 1) {
+          p = ((4 * m_ordering) - (2 * k)) - q;
+        } else if ((4 * m_ordering) - (2 * k) - 1 < q) {
+          p = ((6 * m_ordering) - (2 * k) - 1) - q;
+        }
+
+        // Translate to (0,0)
+        p_trans = p - 1;
+        q_trans = q - 1;
+
+        double alpha = 0.0, beta = 0.0, gamma = 0.0;
+        // \alpha = a_p^T\cdot a_q, \beta = a_p^T\cdot a_p, \gamma = a_q^T\cdot a_q
+        double tmp_p, tmp_q;
+        for (size_t i = 0; i < m; ++i) {
+          tmp_p = A.elements[iteratorC(i, p_trans, lda)];
+          tmp_q = A.elements[iteratorC(i, q_trans, lda)];
+          alpha += tmp_p * tmp_q;
+          beta += tmp_p * tmp_p;
+          gamma += tmp_q * tmp_q;
+        }
+
+        // Schur
+        double c_schur = 1.0, s_schur = 0.0, aqq = 0.0, app = 0.0, apq = alpha;
+
+        // Calculate a_{pp}, a_{qq}, a_{pq}
+        for (size_t i = 0; i < m; ++i) {
+          double value_p = A.elements[iteratorC(i, p_trans, lda)];
+          double value_q = A.elements[iteratorC(i, q_trans, lda)];
+          app += value_p * value_p;
+          aqq += value_q * value_q;
+        }
+
+        if (abs(apq) > tolerance) {
+
+
+          double tau = (aqq - app) / (2.0 * apq);
+          double t = 0.0;
+
+          if (tau >= 0) {
+            t = 1.0 / (tau + sqrt(1 + (tau * tau)));
+          } else {
+            t = 1.0 / (tau - sqrt(1 + (tau * tau)));
+          }
+
+          c_schur = 1.0 / sqrt(1 + (t * t));
+          s_schur = t * c_schur;
+          /* ---------------------------------- Create events --------------------------------- */
+
+//          cudaEvent_t eventMallocA, eventMallocV, eventMemCpyAH2D, eventMemCpyVH2D, eventKernelA, eventKernelV,
+//              eventMemCpyAD2H, eventMemCpyVD2H;
+//
+//          CHECK_CUDA(cudaEventCreate(&eventMallocA));
+//          cudaEventCreate(&eventMallocV);
+//          cudaEventCreate(&eventMemCpyAH2D);
+//          cudaEventCreate(&eventMemCpyVH2D);
+//          cudaEventCreate(&eventKernelA);
+//          cudaEventCreate(&eventKernelV);
+//          cudaEventCreate(&eventMemCpyAD2H);
+//          cudaEventCreate(&eventMemCpyVD2H);
+
+          /* ---------------------------------- Malloc and memcpy from host to device --------------------------------- */
+          double *d_p_vector, *d_q_vector, *d_v_p_vector, *d_v_q_vector;
+
+          CHECK_CUDA(cudaMallocAsync(&d_p_vector, m_bytes, streams[0]));
+          CHECK_CUDA(cudaMallocAsync(&d_q_vector, m_bytes, streams[0]));
+//          cudaEventRecord(eventMallocA, stream[0]);
+
+          CHECK_CUDA(cudaMallocAsync(&d_v_p_vector, n_bytes, streams[1]));
+          CHECK_CUDA(cudaMallocAsync(&d_v_q_vector, n_bytes, streams[1]));
+//          cudaEventRecord(eventMallocV, stream[1]);
+
+//          cudaStreamWaitEvent(stream[0], eventMallocA);
+          cudaMemcpyAsync(d_p_vector, &A.elements[iteratorC(0, p_trans, lda)], m * sizeof(double),
+                     cudaMemcpyHostToDevice, streams[0]);
+          cudaMemcpyAsync(d_q_vector, &A.elements[iteratorC(0, q_trans, lda)], m * sizeof(double),
+                     cudaMemcpyHostToDevice, streams[0]);
+//          cudaEventRecord(eventMemCpyAH2D, stream[0]);
+
+//          cudaStreamWaitEvent(stream[1], eventMallocV);
+          cudaMemcpyAsync(d_v_p_vector, &V.elements[iteratorC(0, p_trans, ldv)], n * sizeof(double),
+                          cudaMemcpyHostToDevice, streams[1]);
+          cudaMemcpyAsync(d_v_q_vector, &V.elements[iteratorC(0, q_trans, ldv)], n * sizeof(double),
+                          cudaMemcpyHostToDevice, streams[1]);
+//          cudaEventRecord(eventMemCpyVH2D, stream[1]);
+
+          /* ---------------------------------- Kernel execution --------------------------------- */
+//          cudaStreamWaitEvent(stream[0], eventMemCpyAH2D);
+          jacobi_rotation<<<A_blocksPerGrid, threadsPerBlock, 0, streams[0]>>>(m, d_p_vector, d_q_vector, c_schur, s_schur);
+//          cudaEventRecord(eventKernelA, stream[0]);
+
+//          cudaStreamWaitEvent(stream[1], eventMemCpyVH2D);
+          jacobi_rotation<<<V_blocksPerGrid, threadsPerBlock, 0, streams[1]>>>(m, d_v_p_vector, d_v_q_vector, c_schur, s_schur);
+//          cudaEventRecord(eventKernelV, stream[1]);
+
+          /* ---------------------------------- Malloc and memcpy from device to host --------------------------------- */
+//          cudaStreamWaitEvent(stream[0], eventKernelA);
+          cudaMemcpyAsync(&A.elements[iteratorC(0, p_trans, lda)], d_p_vector, m * sizeof(double), cudaMemcpyDeviceToHost, streams[0]);
+          cudaMemcpyAsync(&A.elements[iteratorC(0, q_trans, lda)], d_q_vector, m * sizeof(double), cudaMemcpyDeviceToHost, streams[0]);
+//          cudaEventRecord(eventMemCpyAD2H, stream[0]);
+
+//          cudaStreamWaitEvent(stream[1], eventKernelV);
+          cudaMemcpyAsync(&V.elements[iteratorC(0, p_trans, ldv)], d_v_p_vector, n * sizeof(double), cudaMemcpyDeviceToHost, streams[1]);
+          cudaMemcpyAsync(&V.elements[iteratorC(0, q_trans, ldv)], d_v_q_vector, n * sizeof(double), cudaMemcpyDeviceToHost, streams[1]);
+//          cudaEventRecord(eventMemCpyVD2H, stream[1]);
+
+          /* ---------------------------------- Free cuda malloc --------------------------------- */
+//          cudaStreamWaitEvent(stream[0], eventMemCpyAD2H);
+          cudaFreeAsync(d_p_vector, streams[0]);
+          cudaFreeAsync(d_q_vector, streams[0]);
+
+//          cudaStreamWaitEvent(stream[1], eventMemCpyVD2H);
+          cudaFreeAsync(d_v_p_vector, streams[1]);
+          cudaFreeAsync(d_v_q_vector, streams[1]);
+
+          cudaStreamSynchronize(streams[0]);
+          cudaStreamSynchronize(streams[1]);
+
+//          cudaEventDestroy(eventMallocA);
+//          cudaEventDestroy(eventMallocV);
+//          cudaEventDestroy(eventMemCpyAH2D);
+//          cudaEventDestroy(eventMemCpyVH2D);
+//          cudaEventDestroy(eventKernelA);
+//          cudaEventDestroy(eventKernelV);
+//          cudaEventDestroy(eventMemCpyAD2H);
+//          cudaEventDestroy(eventMemCpyVD2H);
+
+//          for (int i = 0; i < 2; ++i) {
+//            cudaStreamDestroy(stream[i]);
+//          }
+        }
+
+#ifdef DEBUG
+        // Report Matrix A^T * A
+        std::cout << std::fixed << std::setprecision(3) << "A^T * A: \n";
+        for (size_t indexRow = 0; indexRow < m; ++indexRow) {
+          for (size_t indexCol = 0; indexCol < n; ++indexCol) {
+            double value = 0.0;
+            for(size_t k_dot = 0; k_dot < m; ++k_dot){
+              value += A.elements[iterator(k_dot, indexRow, lda)] * A.elements[iterator(k_dot, indexCol, lda)];
+            }
+            std::cout << value << " ";
+          }
+          std::cout << '\n';
+        }
+#endif
+      }
+
+      for(auto &stream: streams){
+        CHECK_CUDA(cudaStreamDestroy(stream));
+      }
+    }
+
+#ifdef DEBUG
+    // Report Matrix A^T * A
+    std::cout << std::fixed << std::setprecision(3) << "A^T * A: \n";
+    for (size_t indexRow = 0; indexRow < m; ++indexRow) {
+      for (size_t indexCol = 0; indexCol < n; ++indexCol) {
+        double value = 0.0;
+        for(size_t k_dot = 0; k_dot < m; ++k_dot){
+          value += A.elements[iterator(k_dot, indexRow, lda)] * A.elements[iterator(k_dot, indexCol, lda)];
+        }
+        std::cout << value << " ";
+      }
+      std::cout << '\n';
+    }
+#endif
+  }
+
+  std::cout << "How many repetitions?: " << maxIterations << "\n";
+
+  // Compute \Sigma
+#pragma omp parallel for
+  for (size_t k = 0; k < std::min(m, n); ++k) {
+    for (size_t i = 0; i < m; ++i) {
+      s.elements[k] += A.elements[iteratorC(i, k, lda)] * A.elements[iteratorC(i, k, lda)];
+    }
+    s.elements[k] = sqrt(s.elements[k]);
+  }
+
+  //Compute U
+  if (jobu == AllVec) {
+#pragma omp parallel for
+    for (size_t i = 0; i < m; ++i) {
+      for (size_t j = 0; j < m; ++j) {
+        A.elements[iteratorC(j, i, m)] = A.elements[iteratorC(j, i, m)] / s.elements[i];
+      }
+    }
+  } else if (jobu == SomeVec) {
+#pragma omp parallel for
+    for (size_t k = 0; k < std::min(m, n); ++k) {
+      for (size_t i = 0; i < m; ++i) {
+        A.elements[iteratorC(i, k, m)] = A.elements[iteratorC(i, k, m)] / s.elements[k];
+      }
+    }
+  }
+
+//  delete []ordering_array;
+}
+//#endif
+/***************************************************************************
+    Purpose
+    -------
+    Applies the Jacobi rotation cosine and sine to both arrays x and y.
+    In the following way:
+
+    x[i] = c * x[i] - s * y[i]
+    y[i] = s * x[i] + c * y[i]
+    Arguments
+    ---------
+    @param[in]
+    n       int
+            number of elements in array to apply the rotation.
+
+    @param[in,out]
+    x       DOUBLE PRECISION array dimension at least n
+            The x array to be overwritten.
+
+    @param[in,out]
+    y       DOUBLE PRECISION array dimension at least n
+            The y array to be overwritten.
+
+    @param[in]
+    c       DOUBLE
+            Cosine of Jacobi rotation.
+
+    @param[in]
+    s       DOUBLE PRECISION
+            Sine of Jacobi rotation.
+*********************************************************************************/
+ __global__ void jacobi_rotation(unsigned int n, double *x, double *y, double c, double s) {
+     unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
+
+     if (i < n) {
+         double tmp = x[i];
+         x[i] = c * tmp - s * y[i];
+         y[i] = s * tmp + c * y[i];
+     }
+ }
 }

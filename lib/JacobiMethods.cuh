@@ -8,7 +8,10 @@
 #include <iostream>
 #include <iomanip>
 #include <omp.h>
+#include <vector>
 #include <cublas_v2.h>
+#include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
 #include "Matrix.cuh"
 #include "global.cuh"
 #include "Utils.cuh"
@@ -72,7 +75,6 @@ void cuda_dgesvd(SVD_OPTIONS jobu,
                  CUDAMatrix &V,
                  size_t ldv);
 
-#ifdef CUDA
 void cuda_streams_dgesvd(SVD_OPTIONS jobu,
                          SVD_OPTIONS jobv,
                          size_t m,
@@ -84,8 +86,38 @@ void cuda_streams_dgesvd(SVD_OPTIONS jobu,
                          size_t ldu,
                          CUDAMatrix &V,
                          size_t ldv);
-__global__ void jacobi_transformation(double *A, size_t p, size_t q);
-#endif
+
+void cuda_dgesvd_kernel(SVD_OPTIONS jobu,
+                        SVD_OPTIONS jobv,
+                        size_t m,
+                        size_t n,
+                        Matrix &A,
+                        size_t lda,
+                        Matrix &s,
+                        Matrix &V,
+                        size_t ldv);
+
+void cuda_dgesvd_kernel(SVD_OPTIONS jobu,
+                 SVD_OPTIONS jobv,
+                 size_t m,
+                 size_t n,
+                 CUDAMatrix &A,
+                 size_t lda,
+                 CUDAMatrix &s,
+                 CUDAMatrix &V,
+                 size_t ldv);
+
+void cuda_dgesvd_kernel_streams(SVD_OPTIONS jobu,
+                        SVD_OPTIONS jobv,
+                        size_t m,
+                        size_t n,
+                        Matrix &A,
+                        size_t lda,
+                        Matrix &s,
+                        Matrix &V,
+                        size_t ldv);
+
+__global__ void jacobi_rotation(unsigned int n, double *x, double *y, double c, double s);
 }
 
 #endif //SVD_THESIS_LIB_JACOBIMETHODS_CUH_

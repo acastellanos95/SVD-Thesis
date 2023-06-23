@@ -1,0 +1,2 @@
+NT: 16
+Number of threads: 16
