@@ -35,11 +35,13 @@ int main() {
 //  Thesis::upload_download_correctness_jacobi_kernel(5000, 5000);
 #endif
 
-  size_t begin = 100;
-  size_t end = 100;
-  size_t delta = 100;
+  size_t begin = 1000;
+  size_t end = 10000;
+  size_t delta = 1000;
   auto t = std::time(nullptr);
   auto tm = *std::localtime(&t);
+
+  omp_set_num_threads(36);
 
   std::ostringstream oss;
   oss << std::put_time(&tm, "%d-%m-%Y-%H-%M-%S");
@@ -252,13 +254,16 @@ int main() {
 
 #ifdef OMP
     {
+      std::stringstream iteration_ss;
       double time_avg = 0.0;
-      auto times_repeat = 10;
+      auto times_repeat = 2;
       for(auto i_repeat = 0; i_repeat < times_repeat; ++i_repeat){
         {
           // Build matrix A and R
           /* -------------------------------- Test 1 (Squared matrix SVD) OMP -------------------------------- */
           file_output
+              << "-------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------\n";
+          iteration_ss
               << "-------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------\n";
           std::cout
               << "-------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------\n";
@@ -267,6 +272,7 @@ int main() {
           const size_t width = begin;
 
           file_output << "Dimensions, height: " << height << ", width: " << width << "\n";
+          iteration_ss << "Dimensions, height: " << height << ", width: " << width << "\n";
           std::cout << "Dimensions, height: " << height << ", width: " << width << "\n";
 
           Matrix A(height, width), U(height, height), V(width, width), s(1, std::min(A.height, A.width)), A_copy(height, width);
@@ -278,60 +284,21 @@ int main() {
           std::fill_n(A.elements, A.height * A.width, 0.0);
           std::fill_n(A_copy.elements, A_copy.height * A_copy.width, 0.0);
 
-          // Create a random matrix
-//    std::default_random_engine e(seed);
-//    std::uniform_real_distribution<double> uniform_dist(1.0, 2.0);
-//    for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
-//      for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
-//        double value = uniform_dist(e);
-//        A.elements[Thesis::IteratorC(indexRow, indexCol, A_height)] = value;
-//      }
-//    }
-
           // Select iterator
           auto iterator = Thesis::IteratorC;
 
-          // Create a random bidiagonal matrix
+          // Create R matrix
           std::random_device random_device;
+          std::mt19937 mt_19937(random_device());
           std::default_random_engine e(seed);
           std::uniform_real_distribution<double> uniform_dist(0.0, 1.0);
           for (size_t indexRow = 0; indexRow < std::min<size_t>(A_height, A_width); ++indexRow) {
-            double value = uniform_dist(e);
-            A.elements[iteratorC(indexRow, indexRow, A_height)] = value;
-            A_copy.elements[iteratorC(indexRow, indexRow, A_height)] = value;
+            for (size_t indexCol = indexRow; indexCol < std::min<size_t>(A_height, A_width); ++indexCol) {
+              double value = uniform_dist(mt_19937);
+              A.elements[iteratorC(indexRow, indexCol, A_height)] = value;
+              A_copy.elements[iteratorC(indexRow, indexCol, A_height)] = value;
+            }
           }
-
-          for (size_t indexRow = 0; indexRow < (std::min<size_t>(A_height, A_width) - 1); ++indexRow) {
-            double value = uniform_dist(e);
-            A.elements[iteratorC(indexRow, indexRow + 1, A_height)] = value;
-            A_copy.elements[iteratorC(indexRow, indexRow + 1, A_height)] = value;
-          }
-
-#ifdef REPORT
-          // Report Matrix A
-  file_output << std::fixed << std::setprecision(3) << "A: \n";
-  std::cout << std::fixed << std::setprecision(3) << "A: \n";
-  for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
-    for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
-      file_output << A.elements[Thesis::IteratorC(indexRow, indexCol, A_height)] << " ";
-      std::cout << A.elements[Thesis::IteratorC(indexRow, indexCol, A_height)] << " ";
-    }
-    file_output << '\n';
-    std::cout << '\n';
-  }
-  // Report Matrix A^T * A
-//    std::cout << std::fixed << std::setprecision(3) << "A^T * A: \n";
-//    for (size_t indexRow = 0; indexRow < A.width; ++indexRow) {
-//      for (size_t indexCol = 0; indexCol < A.width; ++indexCol) {
-//        double value = 0.0;
-//        for(size_t k_dot = 0; k_dot < A.height; ++k_dot){
-//          value += A.elements[Thesis::IteratorC(k_dot, indexRow, A.height)] * A.elements[Thesis::IteratorC(k_dot, indexCol, A.height)];
-//        }
-//        std::cout << value << " ";
-//      }
-//      std::cout << '\n';
-//    }
-#endif
 
           // Calculate SVD decomposition
           double ti = omp_get_wtime();
@@ -352,6 +319,7 @@ int main() {
           time_avg += time;
 
           file_output << "SVD OMP time with U,V calculation: " << time << "\n";
+          iteration_ss << "SVD OMP time with U,V calculation: " << time << "\n";
           std::cout << "SVD OMP time with U,V calculation: " << time << "\n";
 
           #pragma omp parallel for
@@ -367,20 +335,18 @@ int main() {
           }
 
           // Calculate frobenius norm
-          cublasHandle_t handle;
-          cublasCreate(&handle);
           double frobenius_norm = 0.0;
-          CUDAMatrix d_Delta(A_copy);
-          auto status = cublasDnrm2(handle, height * width,reinterpret_cast<const double *>(d_Delta.elements), 1, &frobenius_norm);
-          if(status == CUBLAS_STATUS_SUCCESS){
-            file_output << "||A-USVt||_F: " << frobenius_norm << "\n";
-            std::cout << "||A-USVt||_F: " << frobenius_norm << "\n";
-          } else {
-            file_output << "Something went wrong on frobenius norm calculus\n";
-            std::cout << "Something went wrong on frobenius norm calculus\n";
+          #pragma omp parallel for reduction(+:frobenius_norm)
+          for (size_t indexRow = 0; indexRow < height; ++indexRow) {
+            for (size_t indexCol = 0; indexCol < width; ++indexCol) {
+              double value = A_copy.elements[iteratorC(indexRow, indexCol, height)];
+              frobenius_norm += value*value;
+            }
           }
-          cublasDestroy(handle);
-          d_Delta.free();
+
+          file_output << "||A-USVt||_F: " << sqrt(frobenius_norm) << "\n";
+          iteration_ss << "||A-USVt||_F: " << sqrt(frobenius_norm) << "\n";
+          std::cout << "||A-USVt||_F: " << sqrt(frobenius_norm) << "\n";
 
 #ifdef REPORT
           // Report Matrix A=USV
@@ -434,6 +400,12 @@ int main() {
       }
 
       std::cout << "Tiempo promedio: " << (time_avg / round((double) times_repeat)) << "\n";
+      iteration_ss << "Tiempo promedio: " << (time_avg / round((double) times_repeat)) << "\n";
+      file_output << "Tiempo promedio: " << (time_avg / round((double) times_repeat)) << "\n";
+
+      std::ofstream file("reporte-dimension-" + std::to_string(begin) + "-time-" + now_time + ".txt", std::ofstream::out | std::ofstream::trunc);
+      file << iteration_ss.rdbuf();
+      file.close();
     }
 #endif
 
@@ -658,21 +630,23 @@ int main() {
 
 #ifdef CUDA_KERNEL
     {
+        std::stringstream iteration_ss;
       double time_avg = 0.0;
-      auto times_repeat = 1;
+      auto times_repeat = 2;
       for(auto i_repeat = 0; i_repeat < times_repeat; ++i_repeat){
         {
           // Build matrix A and R
-          /* -------------------------------- Test 1 (Squared matrix SVD) OMP -------------------------------- */
+          /* -------------------------------- Test 1 (Squared matrix SVD) CUDA -------------------------------- */
           file_output
-              << "-------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------\n";
+              << "-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------\n";
           std::cout
-              << "-------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------\n";
+              << "-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------\n";
 
           const size_t height = begin;
           const size_t width = begin;
 
           file_output << "Dimensions, height: " << height << ", width: " << width << "\n";
+          iteration_ss << "Dimensions, height: " << height << ", width: " << width << "\n";
           std::cout << "Dimensions, height: " << height << ", width: " << width << "\n";
 
           Matrix A(height, width), V(width, width), s(1, std::min(A.height, A.width)), A_copy(height, width);
@@ -751,6 +725,7 @@ int main() {
           time_avg += time;
 
           file_output << "SVD CUDA Kernel time with U,V calculation: " << time << "\n";
+          iteration_ss << "SVD CUDA Kernel time with U,V calculation: " << time << "\n";
           std::cout << "SVD CUDA Kernel time with U,V calculation: " << time << "\n";
 
           #pragma omp parallel for
@@ -776,9 +751,10 @@ int main() {
           }
 
           file_output << "||A-USVt||_F: " << sqrt(frobenius_norm) << "\n";
+          iteration_ss << "||A-USVt||_F: " << sqrt(frobenius_norm) << "\n";
           std::cout << "||A-USVt||_F: " << sqrt(frobenius_norm) << "\n";
 
-//#ifdef REPORT
+#ifdef REPORT
           // Report Matrix A=USV
   std::cout << std::fixed << std::setprecision(3) << "A=USV^T: \n";
   for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
@@ -791,18 +767,6 @@ int main() {
     }
     std::cout << '\n';
   }
-
-  // Report Matrix U
-//  file_output << std::fixed << std::setprecision(3) << "U: \n";
-//  std::cout << std::fixed << std::setprecision(3) << "U: \n";
-//  for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
-//    for (size_t indexCol = 0; indexCol < A_height; ++indexCol) {
-//      file_output << U.elements[Thesis::IteratorC(indexRow, indexCol, A_height)] << " ";
-//      std::cout << U.elements[Thesis::IteratorC(indexRow, indexCol, A_height)] << " ";
-//    }
-//    file_output << '\n';
-//    std::cout << '\n';
-//  }
 
   // Report \Sigma
   file_output << std::fixed << std::setprecision(3) << "sigma: \n";
@@ -825,14 +789,19 @@ int main() {
     file_output << '\n';
     std::cout << '\n';
   }
-//#endif
+#endif
           A.freeHost(), V.freeHost(), s.freeHost(), A_copy.freeHost();
 
         }
       }
 
       std::cout << "Tiempo promedio: " << (time_avg / round((double) times_repeat)) << "\n";
+      iteration_ss << "Tiempo promedio: " << (time_avg / round((double) times_repeat)) << "\n";
       file_output << "Tiempo promedio: " << (time_avg / round((double) times_repeat)) << "\n";
+
+      std::ofstream file("reporte-dimension-" + std::to_string(begin) + "-time-" + now_time + ".txt", std::ofstream::out | std::ofstream::trunc);
+      file << iteration_ss.rdbuf();
+      file.close();
     }
 #endif
 
@@ -1056,7 +1025,8 @@ int main() {
 #ifdef IMKL
     {
       double time_avg = 0.0;
-      for(auto i_repeat = 0; i_repeat < 10; ++i_repeat){
+      auto times_repeat = 1;
+      for(auto i_repeat = 0; i_repeat < times_repeat; ++i_repeat){
         {
           // Build matrix A and R
           /* -------------------------------- Test 1 (Squared matrix SVD) MKL Computes the singular value decomposition of a real matrix using Jacobi plane rotations. -------------------------------- */
@@ -1084,11 +1054,13 @@ int main() {
           auto iterator = Thesis::IteratorC;
 
           // Create R matrix
+          std::random_device random_device;
+          std::mt19937 mt_19937(random_device());
           std::default_random_engine e(seed);
           std::uniform_real_distribution<double> uniform_dist(0.0, 1.0);
           for (size_t indexRow = 0; indexRow < std::min<size_t>(A_height, A_width); ++indexRow) {
             for (size_t indexCol = indexRow; indexCol < std::min<size_t>(A_height, A_width); ++indexCol) {
-              double value = uniform_dist(e);
+              double value = uniform_dist(mt_19937);
               A.elements[iterator(indexRow, indexCol, A_height)] = value;
               A_copy.elements[iterator(indexRow, indexCol, A_height)] = value;
             }
@@ -1174,21 +1146,6 @@ for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
 
           file_output << "||A-USVt||_F: " << sqrt(frobenius_norm) << "\n";
           std::cout << "||A-USVt||_F: " << sqrt(frobenius_norm) << "\n";
-//          double maxError = 0.0;
-//          for (size_t indexRow = 0; indexRow < A_height; ++indexRow) {
-//            for (size_t indexCol = 0; indexCol < A_width; ++indexCol) {
-//              double value = 0.0;
-//              for (size_t k_dot = 0; k_dot < A_width; ++k_dot) {
-//                value += A.elements[iterator(indexRow, k_dot, A_height)] * (stat.elements[0] * s.elements[k_dot])
-//                    * V.elements[iterator(indexCol, k_dot, A_height)];
-//              }
-//              double diff = std::abs(A_copy.elements[iterator(indexRow, indexCol, A_height)] - value);
-//              maxError = std::max<double>(maxError, diff);
-//            }
-//          }
-//
-//          file_output << "max error between A and USV: " << maxError << "\n";
-//          std::cout << "max error between A and USV: " << maxError << "\n";
 
 #ifdef REPORT
           // Report Matrix A=USV
@@ -1241,7 +1198,8 @@ for (size_t indexRow = 0; indexRow < A_width; ++indexRow) {
         }
       }
 
-      std::cout << "Tiempo promedio: " << (time_avg / 10.0) << "\n";
+      std::cout << "Tiempo promedio: " << (time_avg / round((double) times_repeat)) << "\n";
+      file_output << "Tiempo promedio: " << (time_avg / round((double) times_repeat)) << "\n";
     }
 #endif
   }

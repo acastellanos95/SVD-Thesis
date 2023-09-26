@@ -15,7 +15,7 @@
 #define CUDA_KERNEL
 //#define CUDA_KERNEL_GPU
 //#define IMKL
-#define TESTS
+//#define TESTS
 
 #define CHECK_CUBLAS(call)                                                     \
 {                                                                              \

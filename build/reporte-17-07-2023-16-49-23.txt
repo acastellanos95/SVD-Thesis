@@ -1,0 +1,15 @@
+NT: 16
+Number of threads: 36
+-------------------------------- Test 1 (Squared matrix SVD) MKL Computes the singular value decomposition of a real matrix using Jacobi plane rotations. --------------------------------
+Dimensions, height: 1000, width: 1000
+SVD converge
+scale: 1
+SVD OMP time with U,V calculation: 3.85889
+||A-USVt||_F: 3.3717e-12
+-------------------------------- Test 1 (Squared matrix SVD) MKL Computes the singular value decomposition of a real matrix using Jacobi plane rotations. --------------------------------
+Dimensions, height: 1000, width: 1000
+SVD converge
+scale: 1
+SVD OMP time with U,V calculation: 3.84558
+||A-USVt||_F: 3.3717e-12
+Tiempo promedio: 3.85224

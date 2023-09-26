@@ -1,0 +1,7 @@
+Dimensions, height: 1000, width: 1000
+SVD CUDA Kernel time with U,V calculation: 18.9751
+||A-USVt||_F: 2.14363e-12
+Dimensions, height: 1000, width: 1000
+SVD CUDA Kernel time with U,V calculation: 0.0960241
+||A-USVt||_F: 1.75559e-14
+Tiempo promedio: 9.53556

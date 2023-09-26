@@ -1294,23 +1294,21 @@ void cuda_dgesvd_kernel(SVD_OPTIONS jobu,
   }
 #endif
   // Stopping condition in Hogben, L. (Ed.). (2013). Handbook of Linear Algebra (2nd ed.). Chapman and Hall/CRC. https://doi.org/10.1201/b16113
-  size_t maxIterations = 2;
+  size_t maxIterations = 1;
+
+  std::vector<double*> d_p_vectors(num_of_threads);
+  std::vector<double*> d_q_vectors(num_of_threads);
+  std::vector<double*> d_v_p_vectors(num_of_threads);
+  std::vector<double*> d_v_q_vectors(num_of_threads);
+
+  for(size_t i = 0; i < num_of_threads; i++){
+    cudaMalloc(&d_p_vectors[i], m * sizeof(double));
+    cudaMalloc(&d_q_vectors[i], m * sizeof(double));
+    cudaMalloc(&d_v_p_vectors[i], n * sizeof(double));
+    cudaMalloc(&d_v_q_vectors[i], n * sizeof(double));
+  }
 
   for(auto number_iterations = 0; number_iterations < maxIterations; ++number_iterations){
-
-    std::vector<double*> d_p_vectors(num_of_threads);
-    std::vector<double*> d_q_vectors(num_of_threads);
-    std::vector<double*> d_v_p_vectors(num_of_threads);
-    std::vector<double*> d_v_q_vectors(num_of_threads);
-
-    for(size_t i = 0; i < num_of_threads; i++){
-      cudaMalloc(&d_p_vectors[i], m * sizeof(double));
-      cudaMalloc(&d_q_vectors[i], m * sizeof(double));
-      cudaMalloc(&d_v_p_vectors[i], n * sizeof(double));
-      cudaMalloc(&d_v_q_vectors[i], n * sizeof(double));
-    }
-
-
     // Ordering in  A. Sameh. On Jacobi and Jacobi-like algorithms for a parallel computer. Math. Comput., 25:579–590,
     // 1971
     for (size_t k = 1; k < m_ordering; ++k) {
@@ -1489,13 +1487,13 @@ void cuda_dgesvd_kernel(SVD_OPTIONS jobu,
         }
       }
     }
+  }
 
-    for(size_t i = 0; i < num_of_threads; i++){
-      cudaFree(d_p_vectors[i]);
-      cudaFree(d_q_vectors[i]);
-      cudaFree(d_v_p_vectors[i]);
-      cudaFree(d_v_q_vectors[i]);
-    }
+  for(size_t i = 0; i < num_of_threads; i++){
+    cudaFree(d_p_vectors[i]);
+    cudaFree(d_q_vectors[i]);
+    cudaFree(d_v_p_vectors[i]);
+    cudaFree(d_v_q_vectors[i]);
   }
 
   std::cout << "How many repetitions?: " << maxIterations << "\n";

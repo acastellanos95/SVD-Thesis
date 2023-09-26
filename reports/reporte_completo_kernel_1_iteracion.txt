@@ -1,209 +1,209 @@
 Number of threads: 16
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 1000, width: 1000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 20.9041
 ||A-USVt||_F: 3.04123e-12
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 1000, width: 1000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 0.0909142
 ||A-USVt||_F: 1.75719e-14
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 1000, width: 1000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 0.0906635
 ||A-USVt||_F: 1.75094e-14
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 1000, width: 1000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 0.0910269
 ||A-USVt||_F: 1.74176e-14
 Tiempo promedio: 5.29418
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 2000, width: 2000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 0.545392
 ||A-USVt||_F: 4.44544e-14
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 2000, width: 2000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 0.544313
 ||A-USVt||_F: 4.45127e-14
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 2000, width: 2000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 0.544117
 ||A-USVt||_F: 4.44527e-14
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 2000, width: 2000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 0.544791
 ||A-USVt||_F: 4.44993e-14
 Tiempo promedio: 0.544653
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 3000, width: 3000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 7.64311
 ||A-USVt||_F: 5.81781e-14
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 3000, width: 3000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 7.62507
 ||A-USVt||_F: 5.64873e-14
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 3000, width: 3000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 7.61756
 ||A-USVt||_F: 5.63868e-14
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 3000, width: 3000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 7.65953
 ||A-USVt||_F: 5.64327e-14
 Tiempo promedio: 7.63632
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 4000, width: 4000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 18.3768
 ||A-USVt||_F: 6.81678e-14
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 4000, width: 4000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 18.4496
 ||A-USVt||_F: 6.98289e-14
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 4000, width: 4000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 18.4503
 ||A-USVt||_F: 6.99898e-14
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 4000, width: 4000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 18.498
 ||A-USVt||_F: 6.99457e-14
 Tiempo promedio: 18.4437
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 5000, width: 5000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 36.0012
 ||A-USVt||_F: 9.59e-14
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 5000, width: 5000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 36.0582
 ||A-USVt||_F: 9.68903e-14
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 5000, width: 5000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 36.0728
 ||A-USVt||_F: 9.59225e-14
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 5000, width: 5000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 36.0752
 ||A-USVt||_F: 9.68533e-14
 Tiempo promedio: 36.0518
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 6000, width: 6000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 62.4189
 ||A-USVt||_F: 1.25767e-13
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 6000, width: 6000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 62.3955
 ||A-USVt||_F: 1.26026e-13
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 6000, width: 6000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 62.3324
 ||A-USVt||_F: 1.2609e-13
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 6000, width: 6000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 62.3507
 ||A-USVt||_F: 1.26032e-13
 Tiempo promedio: 62.3744
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 7000, width: 7000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 99.1051
 ||A-USVt||_F: 1.53779e-13
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 7000, width: 7000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 99.1249
 ||A-USVt||_F: 1.53736e-13
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 7000, width: 7000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 99.0721
 ||A-USVt||_F: 1.53598e-13
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 7000, width: 7000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 99.0534
 ||A-USVt||_F: 1.53658e-13
 Tiempo promedio: 99.0889
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 8000, width: 8000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 148.067
 ||A-USVt||_F: 1.78616e-13
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 8000, width: 8000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 148.063
 ||A-USVt||_F: 1.78209e-13
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 8000, width: 8000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 148.867
 ||A-USVt||_F: 1.78154e-13
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 8000, width: 8000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 148.101
 ||A-USVt||_F: 1.78167e-13
 Tiempo promedio: 148.274
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 9000, width: 9000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 210.836
 ||A-USVt||_F: 1.99254e-13
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 9000, width: 9000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 210.975
 ||A-USVt||_F: 1.98768e-13
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 9000, width: 9000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 210.622
 ||A-USVt||_F: 1.98617e-13
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 9000, width: 9000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 210.966
 ||A-USVt||_F: 1.98638e-13
 Tiempo promedio: 210.85
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 10000, width: 10000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 289.945
 ||A-USVt||_F: 2.15458e-13
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 10000, width: 10000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 289.438
 ||A-USVt||_F: 2.16095e-13
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 10000, width: 10000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 289.434
 ||A-USVt||_F: 2.14573e-13
--------------------------------- Test 1 (Squared matrix SVD) OMP --------------------------------
+-------------------------------- Test 1 (Squared matrix SVD) CUDA --------------------------------
 Dimensions, height: 10000, width: 10000
 How many repetitions?: 1
 SVD CUDA Kernel time with U,V calculation: 289.428
